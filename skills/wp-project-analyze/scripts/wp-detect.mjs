@@ -429,7 +429,7 @@ function renderMd(r) {
   L.push(`| Text domain | ${h['Text Domain'] || '—'} |`);
   L.push(`| Requires | WP ${h['Requires at least'] || '?'} / PHP ${h['Requires PHP'] || '?'} |`);
   L.push(`| Files | ${r.counts.php} php, ${r.counts.css} css, ${r.counts.js} js, ${r.counts.scss} scss |`);
-  L.push(`| Prefix | ${(r.prefixes || []).map((p) => `\`${p.prefix}_\``).join(', ') || '—'} |`);
+  L.push(`| Prefix | ${(r.prefixes || []).map((p) => `\`${p.prefix}_\` (${p.kind})`).join(', ') || '—'} |`);
   L.push(`| Options | ${(r.optionSystems || []).map((o) => o.system).join(', ') || '—'} |`);
   L.push(`| Builders | ${(r.pageBuilders || []).join(', ') || '—'} |`);
   L.push('');
