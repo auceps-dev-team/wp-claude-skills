@@ -56,6 +56,23 @@ if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
 }
 ```
 
+## The companion plugin pattern
+
+Commercial themes split themselves in two: the theme handles presentation, a companion plugin registers everything that must survive a theme switch. Moody's Insight Core is a representative example — it registers five post types (`case_study`, `portfolio`, `project`, `service`, `testimonial`) and seven taxonomies, while the theme itself registers **none**.
+
+That is the pattern working as intended. It also creates two obligations people miss:
+
+**The content now depends on the plugin, not the theme.** Deactivate Insight Core and the portfolio disappears, along with the footer — which in that theme is a post of a plugin-registered CPT rendered through `the_content()`. When you inherit such a site, establish which component owns the content before touching either.
+
+**A companion plugin is a plugin, with a plugin's obligations.** These tend to be the least reviewed code in the package: they arrive as a ZIP, install through TGMPA, and update only when the theme author ships a new theme release. Measured on two real companions, they carry substantially more risk than the themes they support — Insight Core alone scans with 17 critical findings across 276 files against 7 for its 356-file theme.
+
+If you are writing one:
+
+- Register post types with `show_in_rest => true` and a stable key. The key is written into every row of `wp_posts`; renaming it orphans all content.
+- Do not vendor whole frameworks into it. Insight Core bundles complete copies of Kirki (129 classes) and CMB2 (67 classes); those copies never receive upstream security fixes and no dependency scanner can see them. Require the library through Composer, or depend on the plugin.
+- Give it its own version, changelog and update path, independent of the theme.
+- Prefix its hooks and treat them as public API — the theme will call them, and so will the customer's site-specific code.
+
 ## Structure
 
 ```

@@ -22,6 +22,33 @@ A measured example from three commercial themes (Bizix 2.2.3, Stratego 1.4.0, TM
 
 So: **assume output escaping is fine and go hunting for the authorization and input layers.** That is where the real findings are.
 
+## Scope the audit to the package, not the theme
+
+The theme directory is rarely where the risk is. Commercial themes ship their functionality in a companion plugin and bundle third-party plugins as ZIPs under `plugins/` or `inc/plugins/`, and those carry most of the exposure. Measured across the same three packages:
+
+| Component | Files | Critical | High |
+|---|---|---|---|
+| Bizix theme | 83 | 2 | — |
+| ↳ its companion, Gyan Elements | 82 | 1 | 20 |
+| Moody theme | 356 | 7 | — |
+| ↳ its companion, Insight Core | 276 | **17** | 14 |
+| Slider Revolution 6.7.29 | 146 | 11 | 66 |
+| WPBakery 8.2 | 583 | 1 | 195 |
+
+The companion plugin is consistently worse than the theme it ships with, and it is the component nobody audits — it arrives as a ZIP, installs itself through TGMPA, and updates only when the theme author publishes a new theme release.
+
+So begin by unpacking everything:
+
+```bash
+find . -name '*.zip' -exec unzip -qo {} -d ./_audit/ \;
+node .../wp-scan.mjs ./_audit/<plugin> --min-severity high
+```
+
+Two things to check on every bundled plugin:
+
+- **Vendored libraries inside the plugin.** Insight Core ships a full copy of Kirki (129 classes) *and* CMB2 (67 classes) inside itself. Those copies never receive upstream security updates, and they are invisible to any dependency scanner because there is no manifest.
+- **The version actually inside the ZIP**, not the version the theme declares in its TGMPA registration. They diverge, and the declared version is what audits usually cite by mistake.
+
 ## Run the scanner first
 
 ```bash
