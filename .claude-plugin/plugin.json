@@ -1,0 +1,18 @@
+{
+  "name": "wp-claude-skills",
+  "version": "0.1.0",
+  "description": "A complete WordPress development skill suite for Claude Code: classic and block themes, multipurpose theme architecture, plugins, security auditing, performance, design systems, i18n and release packaging.",
+  "author": {
+    "name": "wp-claude-skills contributors"
+  },
+  "keywords": [
+    "wordpress",
+    "theme",
+    "plugin",
+    "gutenberg",
+    "woocommerce",
+    "security",
+    "php"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,9 @@
+node_modules/
+vendor/
+.DS_Store
+Thumbs.db
+*.log
+__pycache__/
+*.pyc
+.phpcs-cache
+*-workspace/
