@@ -26,7 +26,7 @@ Output escaping is thorough; input validation and authorization are close to abs
 **As a plugin** (recommended — all skills at once):
 
 ```bash
-git clone https://github.com/<you>/wp-claude-skills.git
+git clone https://github.com/auceps-dev-team/wp-claude-skills.git
 ```
 
 Then add the directory as a plugin source in Claude Code, or copy the skills directly:

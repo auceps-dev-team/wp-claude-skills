@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "description": "A complete WordPress development skill suite for Claude Code: classic and block themes, multipurpose theme architecture, plugins, security auditing, performance, design systems, i18n and release packaging.",
   "author": {
-    "name": "wp-claude-skills contributors"
+    "name": "Auceps Dev Team"
   },
+  "homepage": "https://github.com/auceps-dev-team/wp-claude-skills",
+  "repository": "https://github.com/auceps-dev-team/wp-claude-skills",
   "keywords": [
     "wordpress",
     "theme",
