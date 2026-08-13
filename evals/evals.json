@@ -1,0 +1,70 @@
+{
+  "skill_name": "wp-claude-skills",
+  "note": "Prompts are written in French while the skills are written in English. This is deliberate: the suite must trigger and perform on the maintainer's actual working language.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "security-audit-bizix",
+      "prompt": "J'ai récupéré un site client qui tourne sur le thème Bizix, version 2.2.3. Avant de le remettre en prod je veux savoir ce qui cloche niveau sécurité — c'est un thème acheté, j'ai aucune idée de ce qu'il y a dedans. Le thème est dans C:\\Users\\HP\\Downloads\\Wordpress Thème\\bizix_v2.2.3_package\\bizix\\bizix. Fais-moi un rapport que je puisse montrer au client.",
+      "expected_output": "A security report in French identifying the two known real defects, with severities, file:line references, and triage separating exploitable findings from cosmetic ones.",
+      "files": [],
+      "assertions": [
+        "Identifies the $wpdb->prepare() call with no placeholders in plugins/one-click-demo-import/swm-one-click-demo-import.php as a SQL injection risk",
+        "Identifies swm_ajax_entries as an AJAX endpoint registered with wp_ajax_nopriv_ and lacking nonce verification",
+        "Cites at least three findings with a concrete file path and line number",
+        "Assigns a severity level to each finding",
+        "Distinguishes exploitable findings from cosmetic or non-exploitable ones rather than reporting every signal at equal weight",
+        "States the trust model or who can reach the vulnerable code"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "analyze-moody-architecture",
+      "prompt": "Je dois reprendre la maintenance du thème TM Moody pour un client et je connais pas du tout ce thème. Avant de toucher à quoi que ce soit j'aimerais comprendre comment il est construit : où sont les options, comment les templates sont organisés, ce qu'il ne faut surtout pas modifier. Le thème est dans C:\\Users\\HP\\Downloads\\wp-claude-skills-workspace\\fixtures\\tm-moody. Et écris-moi un CLAUDE.md à la racine du thème pour que je m'y retrouve la prochaine fois.",
+      "expected_output": "An architecture analysis plus a CLAUDE.md, correctly identifying the OOP class convention, Kirki, WPBakery and the SCSS build chain.",
+      "files": [],
+      "assertions": [
+        "Identifies the naming convention as class/constant based (Insight_ or INSIGHT_) rather than reporting a function prefix",
+        "Identifies Kirki as the options/customizer layer",
+        "Identifies WPBakery / Visual Composer as the page builder the theme extends",
+        "Warns that the .css files are compiled from .scss sources and must not be edited directly",
+        "Classifies the theme as classic (PHP template hierarchy, no theme.json)",
+        "Produces a CLAUDE.md file containing an explicit do-not-edit or generated-files section",
+        "Mentions the framework/ directory of singleton classes as the theme's core"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "customizer-color-option",
+      "prompt": "Dans mon thème WordPress je voudrais ajouter une option dans le customizer pour que le client puisse choisir la couleur principale du site, et aussi la largeur du conteneur. Il faut que ça s'applique aux boutons, aux liens et aux titres, et que le client voie le changement en direct dans l'aperçu. Mon thème s'appelle 'auceps', c'est un thème classique en PHP. Donne-moi le code.",
+      "expected_output": "Customizer code with sanitize callbacks on every setting, CSS emitted through wp_add_inline_style as custom properties, and a postMessage preview binding.",
+      "files": [],
+      "assertions": [
+        "Every add_setting() call includes a sanitize_callback argument",
+        "The colour setting is validated with sanitize_hex_color or an equivalent shape check",
+        "The width setting is validated as a bounded integer (absint plus a range check or equivalent)",
+        "CSS is emitted via wp_add_inline_style rather than echoing a <style> block into wp_head",
+        "Generated CSS defines CSS custom properties rather than enumerating many hard-coded selectors",
+        "Uses transport => postMessage together with a JavaScript preview binding file",
+        "All functions, settings and handles are prefixed with the theme slug (auceps)",
+        "No option value is interpolated into CSS without validation"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "child-theme-strategy",
+      "prompt": "Mon client tourne sur le thème Stratego et l'éditeur vient d'annoncer une mise à jour. Le problème c'est que j'ai modifié single.php directement dans le thème, et j'ai ajouté deux ou trois fonctions dans functions.php. Comment je fais pour pas tout perdre à la mise à jour ? Le thème est dans C:\\Users\\HP\\Downloads\\Wordpress Thème\\stratego_v1.4.0\\stratego\\stratego",
+      "expected_output": "Guidance to migrate the modifications into the child theme already shipped with the package, with correct enqueueing and an accurate account of what overrides and what does not.",
+      "files": [],
+      "assertions": [
+        "Notices that a child theme (stratego-child) already ships with the package and recommends using it rather than creating one from scratch",
+        "States the correct Template: value for the child theme (stratego)",
+        "Explains that the child functions.php is additive and runs before the parent, not a replacement",
+        "Addresses whether the parent's functions are wrapped in function_exists, and what that implies for overriding them",
+        "Explains that an overridden single.php becomes the maintainer's responsibility and must be re-synced against parent updates",
+        "Uses get_stylesheet_directory_uri (not get_template_directory_uri) for child theme assets",
+        "Inspects the actual theme files rather than answering generically"
+      ]
+    }
+  ]
+}

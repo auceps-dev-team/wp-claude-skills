@@ -33,6 +33,14 @@ Do not use `@import` to pull in the parent stylesheet. It serializes downloads �
 
 The right approach depends on how the parent loads its own CSS, which is why copy-pasted snippets so often fail.
 
+**First, check whether the parent already enqueues the child stylesheet for you.** Commercial themes frequently do — they detect an active child, load its `style.css` with the correct dependency, and sometimes pick up extra files like `responsive.css` by `file_exists()`. Adding the textbook snippet on top of that loads the same file twice, and the duplicate usually lands at the wrong priority:
+
+```bash
+rg -n "get_stylesheet_uri|get_stylesheet_directory_uri|is_child_theme" --glob '*.php'
+```
+
+If a parent function like `<theme>_wp_styles_child()` already handles it, write no enqueue at all. Note the **priority** it uses too: if the child stylesheet loads at 1500 and the parent's responsive rules at 2000, your media queries lose — and the fix is a separate file the parent loads later, not `!important`.
+
 **If the parent enqueues its stylesheet** (the normal case), declare a dependency so ordering is guaranteed:
 
 ```php
