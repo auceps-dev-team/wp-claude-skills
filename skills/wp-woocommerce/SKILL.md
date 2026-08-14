@@ -72,6 +72,37 @@ Rules that keep this survivable:
 - **Copy the minimum.** Overriding `single-product.php` to change one line means re-syncing the whole file forever.
 - **Record the version.** Each template header carries `@version`. When WooCommerce updates it, your copy is stale and WooCommerce → Status flags it under "Templates". Check that page after every WooCommerce update.
 - **Never override `cart/cart.php` or `checkout/form-checkout.php` unless you must.** These change often and carry payment logic.
+- **Keep the `do_action()` calls.** They are the template's contract with every other plugin.
+
+### What override drift actually looks like
+
+A shipped commercial theme, audited in 2026, carries 32 WooCommerce overrides. All of them declare `@version`, which looks disciplined until you read the values:
+
+| Declared `@version` | Files |
+|---|---|
+| 1.x | 3 |
+| 2.x | 3 |
+| 3.x | 6 |
+| 4.x | 1 |
+| 7.x–9.x | 19 |
+
+Twelve of thirty-two — more than a third — are stamped at WooCommerce 4.0 or older, and three at `1.6.4`, a release from 2012. One of those three is `single-product.php`, the main product template.
+
+Two lessons from that spread. First, the theme author clearly *does* re-sync on WooCommerce releases (nineteen files sit at 7.x–9.x, and the changelog shows resyncs for 9.4 through 9.7) — but re-syncs the files that visibly break, while the quiet ones drift for a decade. Second, and worse: **17 of the 32 overrides contain no `do_action()` at all.** That theme's `single-product.php` has dropped `woocommerce_before_main_content`, `woocommerce_after_main_content` and `woocommerce_sidebar` in favour of the theme's own layout.
+
+The consequence is not cosmetic. Any plugin that extends the product page by hooking those actions — badges, subscriptions, wishlists, B2B pricing — renders nothing, with no error. The customer reports "this plugin does not work with my theme", and the cause is an override written years ago.
+
+So when auditing overrides, diff against the stock template for **missing hooks**, not just for markup:
+
+```bash
+# Which overrides dropped the action hooks entirely?
+for f in $(find woocommerce -name '*.php'); do
+  grep -q "do_action(" "$f" || echo "no hooks: $f"
+done
+
+# How stale is each one?
+grep -rHoE "@version[[:space:]]+[0-9.]+" woocommerce/ | sort -t: -k3 -V
+```
 
 For a plugin (not a theme) providing templates, use `wc_get_template_part()` and the `woocommerce_locate_template` filter rather than shipping into the theme's namespace.
 
