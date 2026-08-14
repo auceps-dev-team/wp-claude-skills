@@ -73,6 +73,30 @@ If you are writing one:
 - Give it its own version, changelog and update path, independent of the theme.
 - Prefix its hooks and treat them as public API — the theme will call them, and so will the customer's site-specific code.
 
+## What a well-maintained plugin looks like
+
+Most WordPress plugin code you will read is not good, so it helps to have a concrete reference point. Envato Market 2.0.12 — a small, vendor-maintained updater plugin — is the cleanest package in the corpus these skills were built from, and the comparison against a theme companion plugin of similar age is instructive:
+
+| Signal | Envato Market (29 files) | A theme companion (82 files) |
+|---|---|---|
+| `current_user_can` | 29 — **one per file** | 4 — one per 20 files |
+| `check_admin_referer` / `check_ajax_referer` | 7 | 1 |
+| HTTP via `wp_remote_*` | 15 | 3 (rest use `file_get_contents`) |
+| `@since` docblocks | 189 | **0** |
+| `esc_html` / `esc_attr` | 133 — 4.6 per file | 4376 — **53 per file** |
+| Critical scanner findings | **0** | 1, plus 20 high |
+
+The last two rows are the important ones, and they point the opposite way from intuition. The companion plugin escapes **eleven times more per file** and is far less safe. Escaping density measures how much markup a file emits, not how carefully it was written. What separates the two is one capability check per file versus one per twenty.
+
+Structurally, Envato Market does four things worth copying:
+
+- **One class per file, named `class-{thing}.php`** — the WordPress core convention, so any WordPress developer can navigate it cold.
+- **Views separated from logic.** `inc/admin/view/` splits into `partials/`, `notice/` and `callback/`, and contains no business logic. The classes never emit markup.
+- **A dedicated API class.** All remote calls go through `class-envato-market-api.php` rather than being scattered — which is why every one of them uses `wp_remote_*` and honours the site's proxy and timeout settings.
+- **`@since` on everything.** 189 docblocks recording when each piece was introduced. This is what makes a deprecation policy possible; without it, nobody can tell what is safe to remove.
+
+Copy the discipline, not the size. A capability check on every entry point costs one line each.
+
 ## Structure
 
 ```

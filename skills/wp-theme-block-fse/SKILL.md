@@ -254,7 +254,26 @@ Commercial hybrid themes often invert this, defining their own `--theme-color-*`
 "color": { "background": "var(--theme-color-bg)" }
 ```
 
-That works and keeps an existing Customizer pipeline authoritative — just make sure those variables are defined before the block styles apply, or the editor renders unstyled.
+That works and keeps an existing Customizer pipeline authoritative, but it creates two dependencies that are easy to miss. A real hybrid theme, measured:
+
+**The variables must exist wherever the block CSS applies.** That theme's `theme.json` references `var(--theme-color-text_link)` and six siblings, ten references in total. Those variables are defined in `skins/default/css/style.css` — inside a *swappable skin*. So the block button's background depends on which skin is active, and a skin that omits the variable silently produces an unstyled button. In the editor it works only as long as the `add_editor_style()` chain happens to pull that skin's CSS in. When you bridge `theme.json` to your own variables, define them in a file that is unconditionally loaded in **both** contexts — `enqueue_block_assets` is the hook that covers both — not in an optional layer.
+
+**Do not declare the palette twice.** The same theme calls `add_theme_support( 'editor-color-palette', $colors )` *and* ships a palette in `theme.json`. Since WordPress 5.9 `theme.json` wins, so the PHP call is dead code — and worse than dead, because the two lists can disagree. A maintainer editing the PHP array sees no effect and has no error to explain why.
+
+The same supersession applies across the board:
+
+| `add_theme_support()` | Superseded by `theme.json` |
+|---|---|
+| `editor-color-palette` | `settings.color.palette` |
+| `editor-font-sizes` | `settings.typography.fontSizes` |
+| `editor-gradient-presets` | `settings.color.gradients` |
+| `disable-custom-colors` | `settings.color.custom: false` |
+| `disable-custom-font-sizes` | `settings.typography.customFontSize: false` |
+| `align-wide` | `settings.layout` |
+| `custom-line-height` | `settings.typography.lineHeight` |
+| `appearance-tools` | `settings.appearanceTools: true` |
+
+When you add `theme.json` to a classic theme, delete these calls in the same commit. Leaving them is how a theme ends up with two palettes and no way to tell which one is live.
 
 Note that in a hybrid theme `theme.json` does **not** give you the Site Editor. Users still edit content in the block editor and layout in PHP.
 
