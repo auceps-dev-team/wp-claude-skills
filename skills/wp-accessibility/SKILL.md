@@ -9,6 +9,30 @@ Accessibility in WordPress is mostly a *markup* discipline, and the markup is ge
 
 Two framings worth holding onto: automated tools catch roughly 30% of WCAG issues, so keyboard and screen-reader testing is not optional; and the same semantic structure that helps assistive technology is what search engines parse, so this is one body of work, not two.
 
+## What commercial themes actually ship
+
+Measured across three commercial themes — 717 PHP files, all three with dropdown menus, off-canvas panels and search overlays:
+
+| Signal | Theme A | Theme B | Theme C |
+|---|---|---|---|
+| Skip link | 0 | 7 files | 0 |
+| `aria-expanded` | **0** | **0** | **0** |
+| `aria-current` | **0** | **0** | **0** |
+| `:focus-visible` | **0** | **0** | **0** |
+| `outline: none` / `outline: 0` | 18 | 65 | 36 |
+| `prefers-reduced-motion` | **0** | **0** | **0** |
+| `wp_body_open()` | present | present | **absent** |
+
+Read the two rows together: **119 CSS rules remove the focus outline across the three themes, and not one of them defines a replacement.** Keyboard navigation is not degraded here, it is invisible — a keyboard user cannot tell where they are on the page at all. That single pair of numbers is the highest-value thing to check on any theme you inherit, and it takes one command:
+
+```bash
+rg -c "outline:\s*(none|0)" --glob '*.css' ; rg -c "focus-visible" --glob '*.css'
+```
+
+Every one of these themes has expanding menus, and none exposes `aria-expanded`. So a screen reader announces a button with no indication of whether the menu it controls is open — and since the state is only in a CSS class, there is no way to recover it.
+
+The practical conclusion for anyone customizing a commercial theme: assume none of this exists, verify rather than trust the "accessibility-ready" claim in the marketing, and budget for it. The fixes below are individually small; there are just a lot of them.
+
 ## Semantic template structure
 
 ```php

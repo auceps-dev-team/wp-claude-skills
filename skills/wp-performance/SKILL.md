@@ -31,6 +31,30 @@ A useful baseline: a healthy WordPress page is under 60 queries and under 400ms 
 
 The dominant theme problem is loading everything everywhere. A theme with a slider, a lightbox, a carousel, an icon font and a map library loads all of them on a blog post that uses none.
 
+Measured across three commercial themes, the shape of the problem is consistent:
+
+| Theme | `wp_enqueue_*` calls | Guarded by a conditional | CSS | JS | Fonts & icons |
+|---|---|---|---|---|---|
+| A | 36 | 2 (6%) | 205 KB | 52 KB | **2.2 MB** |
+| B | 176 | 20 (11%) | **13 MB** | 833 KB | 1.7 MB |
+| C | 76 | 8 (11%) | 1.3 MB | 1.6 MB | **7.7 MB** |
+
+Two things fall out of that table.
+
+**Roughly 90% of enqueues are unconditional** — no `is_singular()`, no `has_block()`, no option check. Every visitor downloads the map library on the privacy policy page.
+
+**The fonts outweigh the code.** Theme A ships 2.2 MB of font and icon files against 257 KB of CSS and JS combined — 8.5× more font than code. Theme C ships 7.7 MB. This is almost always icon fonts: a full Font Awesome set to render a dozen glyphs, frequently duplicated because the theme ships one copy and the page builder ships another.
+
+So before optimizing anything clever, count what the theme actually ships:
+
+```bash
+find . -name '*.woff*' -o -name '*.ttf' -o -name '*.eot' | du -ch --files0-from=- 2>/dev/null | tail -1
+rg -c "wp_enqueue_(script|style)\(" --glob '*.php'
+rg -B2 "wp_enqueue_(script|style)\(" --glob '*.php' | rg -c "is_|has_block|has_shortcode"
+```
+
+The ratio of the second number to the third is the single best predictor of how much easy performance work is available.
+
 ```php
 add_action( 'wp_enqueue_scripts', function () {
     wp_enqueue_style( 'mytheme', get_stylesheet_uri(), array(), MYTHEME_VERSION );
