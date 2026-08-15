@@ -59,7 +59,29 @@ Options: `--format text|json|md`, `--min-severity low|medium|high|critical`. Exi
 
 Start at `--min-severity critical` to get the short list, then widen. On a 356-file theme this typically surfaces under ten criticals — small enough to triage by hand, which is the point. The scanner intentionally skips bundled third-party libraries (TGMPA, Kirki, Redux, CMB2), because findings there are not actionable by the theme author and drown the real ones.
 
-Then **read each finding in context before reporting it.** The scanner does one-hop taint tracking and brace-matched body extraction, not real dataflow analysis. It will occasionally flag a `$wpdb` call whose input is a hard-coded constant. Your judgment is what turns its output into an audit.
+Then **read each finding in context before reporting it.** The scanner does one-hop taint tracking and brace-matched body extraction, not real dataflow analysis. Your judgment is what turns its output into an audit.
+
+### What it is calibrated against, and where it still errs
+
+It was tuned on commercial themes first, then re-tuned against four professionally maintained plugins (Wordfence, Duplicator Pro, WP Staging Pro, Ultimate Store Kit — 2,869 first-party PHP files). That second pass mattered: on the first run it reported 113 criticals on Wordfence, which is not a credible number for a security vendor's own product. Every one sampled was a false positive, in four systematic classes — indirect `prepare()` via `call_user_func_array`, table names interpolated where placeholders are impossible, `permission_callback` supplied through a merged array, and the word `eval(` inside a translated string describing malware.
+
+After fixing those it reports 23. The lesson generalises: **a scanner calibrated on one class of code fails silently on another.** Amateur theme code has no query builders, no variadic wrappers and no annotations, so none of those patterns appear there.
+
+Known limits, all of which mean *verify before reporting*:
+
+| It will over-report | Because |
+|---|---|
+| Query builders assembling SQL across several statements | It reads one statement at a time |
+| Values reaching output through a view or template renderer | It cannot follow data into another file |
+| Clause fragments (`$where`, `$join`) that were escaped upstream | One-hop tracking only |
+
+| It will under-report | Because |
+|---|---|
+| Anything requiring two or more hops of dataflow | No real taint analysis |
+| Logic flaws, wrong-capability checks, race conditions | Not expressible as a pattern |
+| Vulnerabilities in vendored dependencies | Those directories are skipped by design |
+
+It honours `phpcs:ignore` annotations. A developer who left a documented reason has already reviewed that line, and re-reporting it teaches people to ignore the tool.
 
 ## What the scanner cannot see
 

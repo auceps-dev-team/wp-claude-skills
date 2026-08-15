@@ -18,8 +18,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const SEVERITY_ORDER = { critical: 3, high: 2, medium: 1, low: 0 };
+// Mature plugins ship their Composer dependencies under a *prefixed* directory
+// with rewritten namespaces (WPStaging\Vendor\Psr\Log, and similar) so two
+// plugins loading different versions of the same library cannot collide. Those
+// directories are third-party code under a non-standard name, so a scanner that
+// only knows "vendor" ends up auditing Symfony instead of the plugin.
 const SKIP_DIRS = new Set([
   'node_modules', 'vendor', '.git', '__pycache__', 'dist', 'build', '.svn',
+  'vendor_prefixed', 'vendor-prefixed', 'vendor_wpstg', 'third-party',
+  'freemius', 'vendor_freemius',
 ]);
 
 // Third-party libraries bundled inside themes. Findings there are not
@@ -31,33 +38,89 @@ const VENDORED = /(class-tgm-plugin-activation|tgmpa|kirki|aq[-_]?resizer|aqua-r
 // ---------------------------------------------------------------------------
 
 /**
- * Blank out comments while preserving byte offsets, so patterns cannot match
- * inside commented-out code. String literals are kept: several rules need to
- * inspect what is being concatenated into them.
+ * Single pass that understands both strings and comments, returning two views
+ * of the source with byte offsets preserved:
+ *
+ *   noComments — comments blanked, string contents kept. Rules that inspect
+ *                what is concatenated into a string need this.
+ *   code       — comments AND string contents blanked. Rules that hunt for
+ *                dangerous calls need this, so that prose naming a function
+ *                cannot match it.
+ *
+ * Handling both together is not a convenience. Scanning for comments without
+ * tracking strings blanks the `//` inside any URL literal through to the end of
+ * the line — taking the closing quote with it — and every subsequent string in
+ * the file is then mis-parsed. That desynchronisation silently corrupts every
+ * rule downstream, and it is invisible until you diff against a file you have
+ * read by hand.
  */
-function stripComments(src) {
-  let out = '';
-  let i = 0;
+function stripSource(src) {
   const n = src.length;
+  let noComments = '';
+  let code = '';
+  let i = 0;
+
+  const blank = (text) => text.replace(/[^\n]/g, ' ');
+
   while (i < n) {
+    const c = src[i];
     const two = src.slice(i, i + 2);
-    if (two === '//' || src[i] === '#') {
+
+    // Line comment
+    if (two === '//' || c === '#') {
       let j = src.indexOf('\n', i);
       if (j === -1) j = n;
-      out += ' '.repeat(j - i);
-      i = j;
-    } else if (two === '/*') {
+      const b = blank(src.slice(i, j));
+      noComments += b; code += b; i = j;
+      continue;
+    }
+    // Block comment
+    if (two === '/*') {
       let j = src.indexOf('*/', i + 2);
       j = j === -1 ? n : j + 2;
-      out += src.slice(i, j).replace(/[^\n]/g, ' ');
-      i = j;
-    } else {
-      out += src[i];
-      i += 1;
+      const b = blank(src.slice(i, j));
+      noComments += b; code += b; i = j;
+      continue;
     }
+    // Heredoc / nowdoc — treat the body as string content.
+    const here = /^<<<\s*(['"]?)([A-Za-z_]\w*)\1\r?\n/.exec(src.slice(i, i + 80));
+    if (here) {
+      const label = here[2];
+      const endRe = new RegExp(`^\\s*${label}\\b`, 'm');
+      const rest = src.slice(i + here[0].length);
+      const em = endRe.exec(rest);
+      const j = em ? i + here[0].length + em.index + em[0].length : n;
+      const chunk = src.slice(i, j);
+      noComments += chunk;          // keep content: concatenation rules read it
+      code += blank(chunk);
+      i = j;
+      continue;
+    }
+    // String literal
+    if (c === "'" || c === '"') {
+      const quote = c;
+      let j = i + 1;
+      while (j < n) {
+        if (src[j] === '\\') { j += 2; continue; }
+        if (src[j] === quote) { j += 1; break; }
+        j += 1;
+      }
+      const chunk = src.slice(i, j);
+      noComments += chunk;
+      code += quote + blank(chunk.slice(1, -1)) + (chunk.length > 1 ? quote : '');
+      i = j;
+      continue;
+    }
+    noComments += c; code += c; i += 1;
   }
-  return out;
+
+  // Guard the invariant the rest of the scanner depends on.
+  if (noComments.length !== n || code.length !== n) {
+    return { noComments: src, code: src, desynced: true };
+  }
+  return { noComments, code, desynced: false };
 }
+
 
 const lineOf = (src, pos) => src.slice(0, pos).split('\n').length;
 
@@ -100,6 +163,27 @@ const RE_CAP = /current_user_can|user_can\s*\(|is_user_logged_in/;
 
 const push = (out, severity, rule, file, line, message, snippet, fix) =>
   out.push({ severity, rule, file, line, message, snippet, fix });
+
+/**
+ * Respect `phpcs:ignore` / `phpcs:disable` annotations.
+ *
+ * A developer who wrote `// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+ * -- Static query with table names from Activator.` has already looked at this
+ * line and left their reasoning. Re-reporting it says the tool did not read the
+ * code, and it trains people to ignore the tool. Annotations are dropped by the
+ * comment stripper, so this reads the raw source.
+ */
+function ignoredLines(raw) {
+  const set = new Set();
+  const lines = raw.split('\n');
+  lines.forEach((line, idx) => {
+    if (/phpcs:(ignore|disable)/i.test(line)) {
+      set.add(idx + 1);                       // annotation on the same line
+      if (/^\s*(\/\/|#|\/\*)/.test(line)) set.add(idx + 2);  // or on the line above
+    }
+  });
+  return set;
+}
 
 function ruleAjax(file, src, out) {
   const re = /add_action\(\s*['"]wp_ajax_(nopriv_)?([\w-]+)['"]\s*,\s*(['"][\w\\]+['"]|array\s*\(\s*\$this\s*,\s*['"]\w+['"]\s*,?\s*\))/gs;
@@ -154,6 +238,16 @@ function ruleWpdbPrepare(file, src, out) {
   let m;
   while ((m = re.exec(src)) !== null) {
     const args = balanced(src, m.index + m[0].length - 1);
+
+    // A generic query wrapper passes the SQL in a variable — `prepare( $query,
+    // $args )` or `prepare( $query . ';', $args )` — so the placeholders live at
+    // the call sites, not here. There is nothing to judge from this line.
+    if (/^\s*\$\w+\s*(?:\.\s*[^,]*)?(?:,|$)/.test(args)) continue;
+
+    // Placeholders assembled into a variable clause (query builders do this)
+    // are equally invisible from here.
+    if (!/%[sdfi]/.test(args) && /\{?\$\w+(Clause|Sql|Query|Values|Columns|Set|Where)\b/i.test(args)) continue;
+
     if (!/%[sdfi]|%\d+\$[sdfi]/.test(args)) {
       push(out, 'critical', 'prepare-no-placeholder', file, lineOf(src, m.index),
         '$wpdb->prepare() called with no %s/%d placeholder. The values are already concatenated into the SQL string, so prepare() provides no protection whatsoever. Since WP 6.2 this also raises _doing_it_wrong().',
@@ -168,21 +262,108 @@ function ruleWpdbPrepare(file, src, out) {
   }
 }
 
+// Identifiers cannot be bound as placeholders, so a query interpolating only
+// these is doing the one thing prepare() cannot do for it.
+//
+// Name matching alone is unreliable — `$this->issuesTable` and `$t` are both
+// table names. What is reliable is *position*: whatever follows FROM, JOIN,
+// INTO, UPDATE or TABLE in SQL is an identifier by grammar, whatever it is
+// called. Both tests are applied, position first.
+const RE_IDENTIFIER_VAR = /^(?:\w*(?:table|tbl|prefix|schema|db|column|field|index|charset|collate)\w*|this)$/i;
+const RE_IDENTIFIER_POSITION =
+  /\b(?:FROM|JOIN|INTO|UPDATE|TABLE|EXISTS)\s+[`'"]?\{?\$(?:this\s*->\s*)?(\w+)/gi;
+
+/** Variable names that sit in an identifier position within the SQL. */
+function identifierPositionVars(sql) {
+  const names = new Set();
+  RE_IDENTIFIER_POSITION.lastIndex = 0;
+  let m;
+  while ((m = RE_IDENTIFIER_POSITION.exec(sql)) !== null) names.add(m[1]);
+  // `FROM ' . $table . ' WHERE` — concatenated rather than interpolated.
+  for (const c of sql.matchAll(/\b(?:FROM|JOIN|INTO|UPDATE|TABLE)\s*['"]?\s*\.\s*\$(?:this\s*->\s*)?(\w+)/gi)) {
+    names.add(c[1]);
+  }
+  return names;
+}
+
 function ruleWpdbRaw(file, src, out) {
-  const re = /\$wpdb\s*->\s*(query|get_results|get_row|get_var|get_col)\s*\(([^;]*?)\)\s*;/gi;
+  // Match the call, then take its argument list by paren balancing. Scanning to
+  // the next `;` overruns whenever the call sits inside a condition —
+  // `if ( ! ( $x = $wpdb->get_results( ... ) ) ) {` has no semicolon after the
+  // call — and the overrun then collects unrelated variables from the following
+  // lines and reports them as interpolated SQL.
+  const re = /\$wpdb\s*->\s*(query|get_results|get_row|get_var|get_col)\s*\(/gi;
   let m;
   while ((m = re.exec(src)) !== null) {
-    const args = m[2];
-    if (/prepare\s*\(/.test(args)) continue;
-    if (!/\$(?!wpdb\b)\w+/.test(args)) continue;
+    const args = balanced(src, m.index + m[0].length - 1);
+
+    // prepare() reached indirectly still parameterises:
+    //   call_user_func_array( array( $wpdb, 'prepare' ), $args )
+    //   $wpdb->prepare( ... )
+    if (/prepare\s*\(/.test(args) || /['"]prepare['"]/.test(args)) continue;
+
+    const vars = [...args.matchAll(/\$(\w+)/g)].map((v) => v[1]).filter((v) => v !== 'wpdb');
+    if (!vars.length) continue;
+
+    // The overwhelmingly common shape is two statements:
+    //     $query  = $wpdb->prepare( "... %s ...", $args );
+    //     $result = $wpdb->query( $query );
+    // Looking at the second line alone says "unprepared" about prepared SQL, so
+    // check whether the variable was assigned from prepare() earlier in the file.
+    // Only the *nearest* preceding assignment counts. Searching the whole file
+    // for "$where = ... prepare" suppresses a genuine finding whenever some
+    // unrelated earlier line happened to assign the same variable name from a
+    // prepared query — which is common, because $query, $where and $sql are
+    // reused constantly within one file.
+    if (vars.length === 1) {
+      const before = src.slice(0, m.index);
+      const assignRe = new RegExp(`\\$${vars[0]}\\s*=[^=]`, 'g');
+      let last = -1;
+      let a;
+      while ((a = assignRe.exec(before)) !== null) last = a.index;
+      if (last !== -1) {
+        const stmtEnd = before.indexOf(';', last);
+        const assignment = before.slice(last, stmtEnd === -1 ? before.length : stmtEnd);
+        if (/\$wpdb\s*->\s*prepare|['"]prepare['"]/.test(assignment)) continue;
+      }
+    }
+
+    // Table and column names cannot be placeholders — `FROM {$table}` is the
+    // correct way to write it, not a defect. Only report when something that is
+    // not an identifier is being interpolated.
+    const positional = identifierPositionVars(args);
+    const nonIdentifier = vars.filter((v) => !RE_IDENTIFIER_VAR.test(v) && !positional.has(v));
+    if (!nonIdentifier.length) {
+      push(out, 'low', 'wpdb-identifier-interpolation', file, lineOf(src, m.index),
+        `$wpdb->${m[1]}() interpolates ${vars.map((v) => '$' + v).join(', ')}, which look like identifiers rather than values. Identifiers cannot be placeholders, so this is usually correct — confirm the name is code-controlled and never request-derived.`,
+        snippetAt(src, m.index),
+        'If the identifier can come from user input, validate it against a known list, or use %i (WP 6.2+).');
+      continue;
+    }
+
     push(out, 'critical', 'wpdb-unprepared', file, lineOf(src, m.index),
-      `Direct $wpdb->${m[1]}() interpolates a variable without prepare() — SQL injection if any part is request-derived.`,
+      `Direct $wpdb->${m[1]}() interpolates ${nonIdentifier.map((v) => '$' + v).join(', ')} without prepare() — SQL injection if any part is request-derived.`,
       snippetAt(src, m.index),
       'Wrap the SQL in $wpdb->prepare() with %s/%d placeholders, or use WP_Query / get_posts() which parameterise for you.');
   }
 }
 
 const RE_SAFE = /esc_(html|attr|url|js|textarea|xml)|wp_kses|absint|intval|floatval|sanitize_|wp_json_encode|number_format/;
+
+/**
+ * True when every superglobal in the statement is being *tested* rather than
+ * printed — inside isset()/empty(), or as an operand of a comparison.
+ * `echo $id == $_GET['x'] ? admin_url() : other();` prints the branches, never
+ * the request value, and reporting it as reflected XSS wastes the reader's
+ * trust on the findings that are real.
+ */
+function superglobalsOnlyTested(stmt) {
+  const stripped = stmt
+    .replace(/\b(isset|empty|array_key_exists|in_array)\s*\([^)]*\)/g, ' ')
+    .replace(/\$_(?:GET|POST|REQUEST|COOKIE|SERVER)\s*\[[^\]]*\]\s*(?:===|!==|==|!=|<=|>=|<|>)/g, ' ')
+    .replace(/(?:===|!==|==|!=|<=|>=|<|>)\s*\$_(?:GET|POST|REQUEST|COOKIE|SERVER)\s*\[[^\]]*\]/g, ' ');
+  return !/\$_(?:GET|POST|REQUEST|COOKIE|SERVER)\s*\[/.test(stripped);
+}
 
 function ruleSuperglobalEcho(file, src, out) {
   const re = /(?:echo|print)\s+[^;]{0,300}?\$_(GET|POST|REQUEST|COOKIE|SERVER)\s*\[/g;
@@ -191,6 +372,7 @@ function ruleSuperglobalEcho(file, src, out) {
     const end = src.indexOf(';', m.index);
     const stmt = src.slice(m.index, end === -1 ? m.index + 300 : end);
     if (RE_SAFE.test(stmt)) continue;
+    if (superglobalsOnlyTested(stmt)) continue;
     push(out, 'critical', 'xss-superglobal-echo', file, lineOf(src, m.index),
       `Superglobal $_${m[1]} printed without escaping — reflected XSS.`,
       snippetAt(src, m.index),
@@ -253,6 +435,16 @@ function ruleRest(file, src, out) {
   while ((m = re.exec(src)) !== null) {
     const args = balanced(src, m.index + m[0].length - 1);
     if (!/permission_callback/.test(args)) {
+      // The route args are frequently composed — `$baseRoute + array( ... )` or
+      // array_merge( $shared, array( ... ) ) — which puts permission_callback
+      // out of sight of this call. Report it as unverifiable rather than absent.
+      if (/\$\w+\s*\+|array_merge\s*\(|\.\.\.\$\w+/.test(args)) {
+        push(out, 'medium', 'rest-permission-unverifiable', file, lineOf(src, m.index),
+          'register_rest_route() builds its arguments from a variable, so permission_callback cannot be confirmed from this call. Follow the composed array before drawing a conclusion.',
+          snippetAt(src, m.index),
+          'Check the merged array defines permission_callback; if it does, this is fine.');
+        continue;
+      }
       push(out, 'critical', 'rest-no-permission', file, lineOf(src, m.index),
         'register_rest_route() without permission_callback. Since WP 5.5 this is a doing_it_wrong and the route is effectively public.',
         snippetAt(src, m.index),
@@ -392,7 +584,7 @@ function scanFile(file, root) {
 
   let raw;
   try { raw = fs.readFileSync(file, 'utf8'); } catch { return []; }
-  const src = stripComments(raw);
+  const { noComments: src, code } = stripSource(raw);
   const out = [];
 
   ruleAjax(rel, src, out);
@@ -403,12 +595,14 @@ function scanFile(file, root) {
   ruleTaintedVar(rel, src, out);
   ruleRest(rel, src, out);
   ruleSaveHandlers(rel, src, out);
-  ruleDangerous(rel, src, out);
-  ruleRemoteFetch(rel, src, out);
-  ruleUpload(rel, src, out);
+  ruleDangerous(rel, code, out);
+  ruleRemoteFetch(rel, code, out);
+  ruleUpload(rel, code, out);
   ruleUnescapedStored(rel, src, out);
   ruleAbspath(rel, src, raw, out);
-  return out;
+
+  const ignored = ignoredLines(raw);
+  return ignored.size ? out.filter((f) => !ignored.has(f.line)) : out;
 }
 
 function groupBySeverity(findings) {
