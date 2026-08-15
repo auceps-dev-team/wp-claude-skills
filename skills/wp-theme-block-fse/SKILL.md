@@ -147,97 +147,6 @@ becomes `--wp--custom--layout--gutter`. Use it for values that are not first-cla
 
 `"fluid": true` under `typography` generates `clamp()` for every font size automatically. Per-size `fluid.min`/`fluid.max` overrides the calculation where the automatic range is wrong. This replaces hand-written media queries for type.
 
-## HTML templates
-
-Block markup is HTML comments with JSON attributes. Attribute order and the exact comment format matter — hand-editing is error-prone, so build the layout in the Site Editor and export it (Tools → Export), then commit the result.
-
-```html
-<!-- wp:template-part {"slug":"header","area":"header","tagName":"header"} /-->
-
-<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
-<main class="wp-block-group">
-    <!-- wp:query {"queryId":0,"query":{"perPage":10,"postType":"post","inherit":true}} -->
-    <div class="wp-block-query">
-        <!-- wp:post-template -->
-            <!-- wp:post-title {"isLink":true,"level":2} /-->
-            <!-- wp:post-excerpt /-->
-        <!-- /wp:post-template -->
-
-        <!-- wp:query-no-results -->
-            <!-- wp:paragraph --><p>Nothing found.</p><!-- /wp:paragraph -->
-        <!-- /wp:query-no-results -->
-
-        <!-- wp:query-pagination -->
-            <!-- wp:query-pagination-previous /-->
-            <!-- wp:query-pagination-numbers /-->
-            <!-- wp:query-pagination-next /-->
-        <!-- /wp:query-pagination -->
-    </div>
-    <!-- /wp:query -->
-</main>
-<!-- /wp:group -->
-
-<!-- wp:template-part {"slug":"footer","area":"footer","tagName":"footer"} /-->
-```
-
-`"inherit":true` on the Query Loop makes it use the main query — that is what you want in `index.html`, `archive.html` and `search.html`. Set it false only for secondary loops with their own parameters.
-
-Strings inside HTML templates cannot be translated. Anything user-facing that needs translating belongs in a pattern (PHP) instead.
-
-## Patterns
-
-Patterns are PHP files in `patterns/`, registered automatically from a header comment. Because they are PHP, they can be translated:
-
-```php
-<?php
-/**
- * Title: Hero
- * Slug: mytheme/hero
- * Categories: featured, banner
- * Keywords: hero, header, intro
- * Block Types: core/group
- * Viewport Width: 1400
- * Inserter: true
- */
-?>
-<!-- wp:cover {"dimRatio":40,"minHeight":60,"minHeightUnit":"vh"} -->
-<div class="wp-block-cover" style="min-height:60vh">
-    <span aria-hidden="true" class="wp-block-cover__background has-primary-background-color has-background-dim"></span>
-    <div class="wp-block-cover__inner-container">
-        <!-- wp:heading {"textAlign":"center","level":1} -->
-        <h1 class="wp-block-heading has-text-align-center"><?php echo esc_html_x( 'Welcome', 'Hero title', 'mytheme' ); ?></h1>
-        <!-- /wp:heading -->
-    </div>
-</div>
-<!-- /wp:cover -->
-```
-
-`Inserter: false` hides a pattern from the inserter while keeping it available for use inside templates — the standard way to ship template scaffolding without cluttering the UI.
-
-**Patterns can be locked into templates.** Setting `templateLock` on a group prevents users from removing structural blocks while leaving content editable — useful for client sites.
-
-## Style variations
-
-A JSON file in `styles/` with the same shape as `theme.json` (only `settings` and `styles`) appears as a selectable global style:
-
-```json
-{
-  "$schema": "https://schemas.wp.org/trunk/theme.json",
-  "version": 3,
-  "title": "Dark",
-  "settings": {
-    "color": {
-      "palette": [
-        { "slug": "base",     "color": "#0d0d0d", "name": "Base" },
-        { "slug": "contrast", "color": "#f5f5f5", "name": "Contrast" }
-      ]
-    }
-  }
-}
-```
-
-Variations are merged over `theme.json`, so declare only what changes. Since WP 6.6 you can also ship *partial* variations that only affect colours or only typography, by including just those sections — they then appear in the separate colour/typography pickers.
-
 ## Hybrid themes
 
 Adding `theme.json` to a classic theme is often the highest-value change available: you get editor colour and spacing controls, consistent block styling, and generated CSS variables, without rewriting templates.
@@ -277,43 +186,11 @@ When you add `theme.json` to a classic theme, delete these calls in the same com
 
 Note that in a hybrid theme `theme.json` does **not** give you the Site Editor. Users still edit content in the block editor and layout in PHP.
 
-## Editor parity
+## Reference files
 
-The editor must look like the front end, or users lose trust in it.
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
 
-```php
-add_action( 'after_setup_theme', function () {
-    add_theme_support( 'editor-styles' );
-    add_editor_style( 'assets/css/editor.css' );
-    add_theme_support( 'wp-block-styles' );      // core block default styles
-    add_theme_support( 'responsive-embeds' );
-} );
-```
-
-`theme.json` styling applies to the editor automatically. `add_editor_style()` is only needed for CSS that `theme.json` cannot express.
-
-## Common failures
-
-| Symptom | Cause |
+| File | Covers |
 |---|---|
-| theme.json change has no effect | The user customized that value in the Site Editor; DB wins. Reset via Site Editor → Styles → Revisions, or delete the `wp_global_styles` post. |
-| Template edits have no effect | Same: an edited template is stored as a `wp_template` post. The Site Editor shows "Customized" and offers "Clear customizations". |
-| Colours missing from the picker | `settings.color.palette` not set, or `defaultPalette: false` with no palette provided. |
-| Editor looks different from front end | Front-end CSS not expressed in `theme.json` and not registered with `add_editor_style()`. |
-| Fonts not loading | `fontFace.src` must use the `file:./` prefix for theme-relative paths. |
-| Spacing presets absent | `spacingScale.steps` defaults to 7 generated steps; setting `steps: 0` without providing `spacingSizes` removes them entirely. |
-| Wide/full alignment does nothing | `settings.layout` missing, or the block is not inside a `constrained` layout. |
-
-## Migration order
-
-Converting a classic theme to blocks, in the order that keeps the site working throughout:
-
-1. Add `theme.json` with settings only (palette, sizes, spacing). Nothing breaks.
-2. Move styling into `styles` progressively; delete the CSS it replaces.
-3. Convert `header.php` / `footer.php` into `parts/*.html`.
-4. Add `templates/index.html` — **this flips the theme to block mode**, so have the other templates ready.
-5. Convert remaining templates.
-6. Convert reusable layouts into patterns.
-7. Add style variations last.
-
-Step 4 is the point of no return in each release. Ship steps 1–3 first and let them settle.
+| [`references/templates-and-patterns.md`](references/templates-and-patterns.md) | HTML template markup, pattern registration, style variations, editor parity |
+| [`references/adoption.md`](references/adoption.md) | Symptom-to-cause table for theme.json problems, and the safe migration order |

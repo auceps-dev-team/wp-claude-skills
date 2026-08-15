@@ -157,143 +157,6 @@ $columns = $args['columns'] ?? 4;
 
 Granularity is a real design decision. One commercial theme ships `loop/blog-classic/format-video.php`, `loop/blog-feature/format-quote.php` and so on — style × post-format, dozens of near-identical files. It is trivially customizable and miserable to maintain: one markup fix means editing thirty files. Prefer parameterized parts, and split only when the markup genuinely diverges.
 
-## functions.php
-
-Keep it a table of contents, not an implementation. Anything longer than a screen belongs in `inc/`.
-
-```php
-<?php
-if ( ! defined( 'ABSPATH' ) ) { exit; }
-
-define( 'MYTHEME_VERSION', wp_get_theme()->get( 'Version' ) );
-define( 'MYTHEME_DIR', get_template_directory() );
-define( 'MYTHEME_URI', get_template_directory_uri() );
-
-require_once MYTHEME_DIR . '/inc/setup.php';
-require_once MYTHEME_DIR . '/inc/enqueue.php';
-require_once MYTHEME_DIR . '/inc/template-tags.php';
-require_once MYTHEME_DIR . '/inc/customizer.php';
-```
-
-Reading `Version` from the stylesheet header keeps one source of truth — hard-coding it in a constant guarantees it drifts from `style.css`.
-
-### Theme setup
-
-```php
-add_action( 'after_setup_theme', 'mytheme_setup' );
-function mytheme_setup() {
-    load_theme_textdomain( 'mytheme', MYTHEME_DIR . '/languages' );
-
-    add_theme_support( 'automatic-feed-links' );
-    add_theme_support( 'title-tag' );
-    add_theme_support( 'post-thumbnails' );
-    add_theme_support( 'html5', array( 'search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script' ) );
-    add_theme_support( 'customize-selective-refresh-widgets' );
-    add_theme_support( 'responsive-embeds' );
-    add_theme_support( 'align-wide' );
-    add_theme_support( 'editor-styles' );
-    add_editor_style( 'assets/css/editor.css' );
-    add_theme_support( 'custom-logo', array(
-        'height'      => 60,
-        'width'       => 200,
-        'flex-width'  => true,
-        'flex-height' => true,
-    ) );
-
-    register_nav_menus( array(
-        'primary' => esc_html__( 'Primary Menu', 'mytheme' ),
-        'footer'  => esc_html__( 'Footer Menu', 'mytheme' ),
-    ) );
-
-    add_image_size( 'mytheme-card', 600, 400, true );
-}
-```
-
-`add_theme_support( 'title-tag' )` means you must **not** output a `<title>` in `header.php`. `html5` with `style` and `script` removes the obsolete `type` attributes.
-
-### Enqueueing
-
-```php
-add_action( 'wp_enqueue_scripts', 'mytheme_assets' );
-function mytheme_assets() {
-    wp_enqueue_style( 'mytheme', get_stylesheet_uri(), array(), MYTHEME_VERSION );
-
-    wp_enqueue_script( 'mytheme-nav', MYTHEME_URI . '/assets/js/navigation.js', array(), MYTHEME_VERSION, true );
-
-    wp_localize_script( 'mytheme-nav', 'myThemeData', array(
-        'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-        'nonce'   => wp_create_nonce( 'mytheme_ajax' ),
-    ) );
-
-    if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
-        wp_enqueue_script( 'comment-reply' );   // core handle; only load where needed
-    }
-}
-```
-
-`get_stylesheet_uri()` rather than `get_template_directory_uri() . '/style.css'` — the former resolves to the child theme's stylesheet when one is active.
-
-Use the version constant, never `time()`. `time()` disables browser caching permanently and turns every page view into a fresh download.
-
-## header.php and footer.php
-
-```php
-<!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-    <meta charset="<?php bloginfo( 'charset' ); ?>">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <?php wp_head(); ?>
-</head>
-<body <?php body_class(); ?>>
-<?php wp_body_open(); ?>
-<a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', 'mytheme' ); ?></a>
-```
-
-`wp_head()`, `wp_body_open()`, `wp_footer()`, `body_class()` and `language_attributes()` are all load-bearing — plugins, the admin bar and the block editor all inject through them. A theme missing `wp_footer()` breaks in ways that look unrelated.
-
-## Navigation
-
-```php
-wp_nav_menu( array(
-    'theme_location' => 'primary',
-    'container'      => 'nav',
-    'container_class'=> 'main-nav',
-    'menu_class'     => 'menu',
-    'depth'          => 3,
-    'fallback_cb'    => false,   // render nothing rather than a page list when unassigned
-) );
-```
-
-Write a custom `Walker_Nav_Menu` subclass only when the markup genuinely cannot be produced by classes and filters — walkers are the hardest part of a theme to maintain, and `nav_menu_css_class`, `nav_menu_item_args` and `walker_nav_menu_start_el` cover most needs. For megamenus, prefer storing configuration in menu item meta over subclassing the edit walker.
-
-## Widget areas
-
-```php
-add_action( 'widgets_init', 'mytheme_widgets' );
-function mytheme_widgets() {
-    register_sidebar( array(
-        'name'          => esc_html__( 'Sidebar', 'mytheme' ),
-        'id'            => 'sidebar-1',
-        'description'   => esc_html__( 'Appears on posts and archives.', 'mytheme' ),
-        'before_widget' => '<section id="%1$s" class="widget %2$s">',
-        'after_widget'  => '</section>',
-        'before_title'  => '<h2 class="widget-title">',
-        'after_title'   => '</h2>',
-    ) );
-}
-```
-
-The `%1$s` / `%2$s` placeholders in `before_widget` are required — omit them and widget IDs and classes disappear, breaking most widget CSS.
-
-## Conditional tags
-
-`is_front_page()` vs `is_home()`: the first is the site's front page, the second is the blog posts index. On a default install both are true for `/`; on a site with a static front page they are different pages. Getting this backwards is the most common template bug.
-
-`is_singular()` covers posts, pages and CPTs. `is_single()` excludes pages. `is_page()` covers only pages.
-
-Conditional tags are unreliable before `wp` runs — inside `after_setup_theme` or `init` the query does not exist yet, and calling them there returns false and emits a notice on modern WordPress.
-
 ## What to hand off to other skills
 
 - Options, Customizer, per-section overrides → `wp-theme-options`
@@ -301,3 +164,12 @@ Conditional tags are unreliable before `wp` runs — inside `after_setup_theme` 
 - Skins, demo import, header/footer builders, multi-layout architecture → `wp-theme-multipurpose`
 - Overriding a parent theme → `wp-child-theme`
 - Escaping and sanitizing rules → `wp-standards`
+
+## Reference files
+
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
+| File | Covers |
+|---|---|
+| [`references/setup.md`](references/setup.md) | functions.php organisation, theme supports, enqueueing, header.php and footer.php |
+| [`references/components.md`](references/components.md) | wp_nav_menu and walkers, widget areas, conditional tags and their traps |

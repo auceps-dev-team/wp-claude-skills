@@ -119,9 +119,20 @@ Reports kind, architecture generation, header metadata, naming convention (funct
 
 The skills degrade gracefully without them — the guidance stands on its own.
 
+## Repository tooling
+
+```bash
+node scripts/validate-skills.mjs      # enforce the authoring standard; exits 1 on errors
+node scripts/split-skill.mjs --dry-run # move depth into references/ from a declarative config
+```
+
+Every skill keeps `SKILL.md` under 10 KB and pushes depth into `references/`, linked from a routing table at the foot of the file. The validator enforces the size cap, description quality, orphaned references, undocumented scripts and broken cross-references, and runs in CI.
+
 ## Contributing
 
-Rules of the house: every claim should be checkable against real code; scanner rules need a fixture that proves they fire; prefer explaining *why* over prescribing rules, because a reader who understands the reason can handle the case you did not anticipate.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the authoring standard.
+
+The rule everything else follows from: **every claim in a skill must be checkable against real code** — not against documentation, but against a file someone can open. Scanner rules need a fixture that proves they fire. Prefer explaining *why* over prescribing rules, because a reader who understands the reason can handle the case you did not anticipate.
 
 ## Licence
 

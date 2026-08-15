@@ -1,0 +1,46 @@
+name: Validate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate the authoring standard
+        run: node scripts/validate-skills.mjs
+
+      - name: Scripts are syntactically valid
+        run: |
+          for f in $(find . -name '*.mjs' -not -path './node_modules/*'); do
+            node --check "$f"
+          done
+
+      - name: Scripts run and self-describe
+        run: |
+          node skills/wp-security-audit/scripts/wp-scan.mjs --help
+          node skills/wp-project-analyze/scripts/wp-detect.mjs || true
+
+      - name: Scanner fires on its fixture
+        run: |
+          mkdir -p /tmp/fixture
+          cat > /tmp/fixture/vuln.php <<'PHP'
+          <?php
+          add_action( 'wp_ajax_nopriv_demo', 'demo_cb' );
+          function demo_cb() {
+              global $wpdb;
+              $wpdb->query( $wpdb->prepare( "UPDATE x SET a = '" . $_POST['v'] . "'" ) );
+          }
+          PHP
+          # Exit 1 is the expected outcome: the scanner found the planted bugs.
+          if node skills/wp-security-audit/scripts/wp-scan.mjs /tmp/fixture --min-severity critical; then
+            echo "scanner failed to detect the planted vulnerabilities"
+            exit 1
+          fi

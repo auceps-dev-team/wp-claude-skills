@@ -80,98 +80,6 @@ The skip link must be **visible on focus** — a permanently hidden one helps no
 
 Never use `display: none` for screen-reader text — it removes the content from the accessibility tree entirely.
 
-## Headings
-
-One `<h1>` per page, and no skipped levels. Screen reader users navigate by heading, so a broken hierarchy is a broken table of contents.
-
-```php
-<h1 class="entry-title"><?php the_title(); ?></h1>   <!-- singular -->
-<h2 class="entry-title"><a href="..."><?php the_title(); ?></a></h2>   <!-- in a loop -->
-```
-
-The common bug is a template used for both single and archive views emitting `<h1>` in a loop, producing twenty `<h1>` elements on an archive page.
-
-Widget titles must follow the page's hierarchy too — `before_title => '<h2 class="widget-title">'` is right when widgets sit beside `<h2>` content, wrong when they are nested deeper. Style headings with CSS; never pick a level for its default size.
-
-## Images
-
-```php
-<?php the_post_thumbnail( 'large', array( 'alt' => '' ) ); ?>
-```
-
-Alt text rules:
-
-- **Informative image** → describe the information, not the picture. "Bar chart: sales doubled in Q4", not "chart".
-- **Decorative image** → `alt=""` (empty, but present). An omitted `alt` makes screen readers read the filename.
-- **Image inside a link** → the alt describes the *destination*, since it is the link text.
-- **Never** start with "image of" or "picture of" — the role is already announced.
-
-WordPress uses the media library's alt field automatically. `the_post_thumbnail()` with no alt inherits it, which is usually what you want.
-
-## Navigation
-
-Keyboard access is where most theme menus fail. A dropdown that opens on `:hover` only is unreachable by keyboard.
-
-```css
-.menu-item > .sub-menu { display: none; }
-.menu-item:hover > .sub-menu,
-.menu-item:focus-within > .sub-menu { display: block; }
-```
-
-`:focus-within` is the minimum CSS-only fix. For a menu with a toggle button, manage state properly:
-
-```html
-<button aria-expanded="false" aria-controls="primary-menu">Menu</button>
-<ul id="primary-menu">…</ul>
-```
-
-```js
-button.addEventListener( 'click', () => {
-    const open = button.getAttribute( 'aria-expanded' ) === 'true';
-    button.setAttribute( 'aria-expanded', String( ! open ) );
-} );
-```
-
-`aria-expanded` must reflect reality at all times — a static `aria-expanded="false"` is worse than none, because it actively misinforms.
-
-Mark the current page: WordPress adds `.current-menu-item`, and `aria-current="page"` is the accessible equivalent:
-
-```php
-add_filter( 'nav_menu_link_attributes', function ( $atts, $item ) {
-    if ( in_array( 'current-menu-item', (array) $item->classes, true ) ) {
-        $atts['aria-current'] = 'page';
-    }
-    return $atts;
-}, 10, 2 );
-```
-
-## Forms
-
-Every control needs a real, programmatically associated label. Placeholder text is not a label — it disappears on input and often fails contrast.
-
-```php
-<form role="search" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>">
-    <label for="search-field"><?php esc_html_e( 'Search', 'mytheme' ); ?></label>
-    <input type="search" id="search-field" name="s" value="<?php echo esc_attr( get_search_query() ); ?>">
-    <button type="submit"><?php esc_html_e( 'Search', 'mytheme' ); ?></button>
-</form>
-```
-
-Where the visible design has no label, hide it visually rather than removing it:
-
-```php
-<label for="search-field" class="screen-reader-text"><?php esc_html_e( 'Search', 'mytheme' ); ?></label>
-```
-
-Errors must be announced, associated and specific:
-
-```html
-<input id="email" aria-invalid="true" aria-describedby="email-error">
-<p id="email-error" role="alert">Enter a valid email address.</p>
-```
-
-`role="alert"` makes it announced immediately. Required fields need `required` and `aria-required="true"`; a red asterisk alone conveys nothing to a screen reader, and colour alone never carries meaning (WCAG 1.4.1).
-
 ## Focus
 
 Never remove focus outlines without replacing them:
@@ -195,70 +103,6 @@ dialog.addEventListener( 'keydown', ( e ) => {
 } );
 ```
 
-## Colour and motion
-
-- Body text 4.5:1, large text and UI components 3:1. See the `wp-design-system` skill for building this into the palette.
-- Never use colour as the only indicator — underline links in body text, or provide an icon.
-- Respect reduced motion:
-
-```css
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-```
-
-- Carousels that auto-advance need a pause control (WCAG 2.2.2). Better: do not auto-advance.
-
-## WCAG 2.2 additions
-
-Newer criteria that catch existing themes:
-
-- **2.4.11 Focus Not Obscured** — a sticky header must not cover the focused element. Add `scroll-margin-top` matching the header height.
-- **2.5.8 Target Size (Minimum)** — interactive targets at least 24×24 CSS pixels. Icon-only buttons and dense footer menus commonly fail.
-- **3.3.7 Redundant Entry** — do not ask for the same information twice in a flow.
-- **3.2.6 Consistent Help** — help mechanisms in the same relative position across pages.
-
-## accessibility-ready
-
-For wordpress.org themes, the `accessibility-ready` tag is audited by a human. Requirements include: keyboard navigation throughout, skip link, visible focus, correct headings, labelled forms, sufficient contrast, no keyboard traps, and no content that relies on hover alone. Read the current [Theme Review accessibility requirements](https://make.wordpress.org/themes/handbook/review/accessibility/) before claiming the tag — it is checked, and a failed claim blocks the submission.
-
-## Structured data
-
-Semantic markup and schema serve the same goal. Emit JSON-LD rather than microdata — it is easier to keep correct because it is not entangled with the markup:
-
-```php
-add_action( 'wp_head', function () {
-    if ( ! is_singular( 'post' ) ) {
-        return;
-    }
-    $schema = array(
-        '@context'      => 'https://schema.org',
-        '@type'         => 'BlogPosting',
-        'headline'      => get_the_title(),
-        'datePublished' => get_the_date( 'c' ),
-        'dateModified'  => get_the_modified_date( 'c' ),
-        'author'        => array( '@type' => 'Person', 'name' => get_the_author() ),
-        'mainEntityOfPage' => array( '@type' => 'WebPage', '@id' => get_permalink() ),
-    );
-    printf( '<script type="application/ld+json">%s</script>', wp_json_encode( $schema ) );
-} );
-```
-
-**Check whether an SEO plugin is already emitting this.** Yoast and Rank Math output a complete schema graph; a theme adding a second, partial one creates conflicting entities. Detect and defer:
-
-```php
-if ( defined( 'WPSEO_VERSION' ) || class_exists( 'RankMath' ) ) {
-    return;
-}
-```
-
-Structured data must describe what is actually on the page. Marking up reviews or FAQs that users cannot see is a manual-action risk, not a ranking trick.
-
 ## Testing
 
 Automated first, then the parts that matter:
@@ -276,3 +120,12 @@ Then by hand, in this order — these find what tooling cannot:
 4. **Disable CSS.** The document should still read in a sensible order.
 
 The keyboard test alone catches more real problems than any scanner.
+
+## Reference files
+
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
+| File | Covers |
+|---|---|
+| [`references/patterns.md`](references/patterns.md) | Headings, images and alt text, navigation and menus, forms and errors |
+| [`references/conformance.md`](references/conformance.md) | Colour and motion, WCAG 2.2 criteria, accessibility-ready review, schema.org output |
