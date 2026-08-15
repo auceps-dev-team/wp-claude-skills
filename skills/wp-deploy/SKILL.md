@@ -132,27 +132,6 @@ Anything that drops tables, truncates, empties uploads or overwrites a database 
 
 This applies to tooling you audit, too. Commercial demo-import plugins ship reset functions that drop every table, and at least one shipped implementation guards it with a nonce and `is_admin()` — which is a context check, not an authorization check — leaving any authenticated subscriber able to destroy the site. See `wp-security-audit`, `references/vulnerability-classes.md`. If you are deploying a site that includes such a plugin, remove it after the demo import rather than leaving it active.
 
-## Deployment pipeline
-
-```yaml
-# Deploy on tag; code only, database untouched.
-- run: composer install --no-dev --optimize-autoloader
-- run: npm ci && npm run build
-- run: |
-    rsync -az --delete \
-      --exclude='wp-content/uploads' \
-      --exclude='wp-config.php' \
-      --exclude='.git' \
-      ./ deploy@prod:/var/www/site/
-- run: ssh deploy@prod 'cd /var/www/site && wp cache flush && wp rewrite flush'
-```
-
-`--delete` with `--exclude` on uploads and `wp-config.php` is the combination that makes rsync safe. Getting the excludes wrong deletes the media library.
-
-For zero-downtime, deploy to a timestamped directory and switch a symlink; rollback is then switching it back.
-
-Run database migrations — your own schema changes, not content — from an idempotent, version-gated routine. See `wp-plugin-architecture`, `references/rest-cron-tables.md`.
-
 ## Workflow
 
 1. Confirm inputs and **which environment you are pointed at**.
@@ -202,4 +181,5 @@ Anything not verifiable now, and how long to keep the rollback point.
 
 | File | Covers |
 |---|---|
+| [`references/pipeline.md`](references/pipeline.md) | Automated deploy with rsync, zero-downtime symlink switching, schema migrations |
 | [`references/wp-cli.md`](references/wp-cli.md) | The WP-CLI commands that matter for deployment, maintenance and diagnosis, with the flags that make them safe |
