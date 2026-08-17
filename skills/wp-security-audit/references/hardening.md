@@ -108,6 +108,23 @@ foreach ( wp_roles()->roles as $slug => $role ) {
 - Use a dedicated DB user with only `SELECT, INSERT, UPDATE, DELETE` on the site's schema. `DROP`, `ALTER` and `CREATE` are needed only during updates — grant them temporarily.
 - Back up and test the restore. An untested backup is not a backup.
 
+## Where a firewall has to run
+
+A security plugin that loads as a plugin cannot protect what loads before it. By the time `wp-content/plugins/` is read, WordPress core has bootstrapped, `wp-config.php` has run, and any plugin earlier in the load order has already executed. A request that exploits core or an earlier plugin is over before the firewall sees it.
+
+Wordfence exposes this as two protection levels, and the difference is a single PHP setting:
+
+```apache
+# .htaccess or .user.ini — runs before WordPress, before everything
+php_value auto_prepend_file "/path/to/wp-content/plugins/wordfence/waf/bootstrap.php"
+```
+
+With `auto_prepend_file` set, the firewall runs first and its `WFWAF_AUTO_PREPEND` constant is true. Without it, the same bootstrap is pulled in from the plugin's main file (`wordfence.php:136`) and only covers what loads afterwards. A `WFWAF_RUN_COMPLETE` guard stops it executing twice when both paths fire.
+
+Two things follow. When auditing a site that has a security plugin, **check which mode it is in** — the dashboard usually says "extended protection" versus "basic", and most installs never complete the extended step. And when evaluating any WAF plugin, this is the first question to ask; a firewall without a pre-WordPress hook is an application-level filter, not a firewall.
+
+The same mechanism is worth knowing for diagnosis: an `auto_prepend_file` left behind by an uninstalled security plugin produces a fatal on every request, and the path is in `.htaccess` or `.user.ini` rather than anywhere in WordPress.
+
 ## Monitoring
 
 - File integrity monitoring on `wp-admin/`, `wp-includes/` and theme directories — core files should never change between updates.

@@ -1,14 +1,14 @@
 # wp-claude-skills
 
-A WordPress development skill suite for [Claude Code](https://claude.com/claude-code). Sixteen skills covering theme development (classic, hybrid and block), plugin architecture, security auditing, performance, design systems, accessibility, i18n and release packaging.
+A WordPress development skill suite for [Claude Code](https://claude.com/claude-code), covering the whole project lifecycle: creation, deployment, modification, monitoring and improvement. Nineteen skills across themes (classic, hybrid and block), plugins and blocks, WooCommerce, security, performance, accessibility, SEO, design systems, i18n, deployment, maintenance and release packaging.
 
 Two zero-dependency Node scripts do the mechanical work: a security scanner and an architecture detector.
 
 ## Why these skills exist
 
-They were written against three real commercial WordPress themes representing three generations of architecture — a Customizer-driven theme with a PHP CSS pipeline, a theme with a home-made options framework and a swappable skins layer, and a 38-class OOP framework with Kirki and a 54-element WPBakery library. The patterns, the failure modes and the scanner rules all come from that codebase rather than from documentation.
+Every claim in them is checkable against real code. They were written against a corpus of six commercial themes and nine plugins — roughly 4,700 first-party PHP files — rather than against documentation.
 
-The measurements that shaped the security skill, across ~717 PHP files:
+The measurements that shaped the security skill, across the theme half of that corpus (~717 files):
 
 | Signal | Count |
 |---|---|
@@ -20,6 +20,8 @@ The measurements that shaped the security skill, across ~717 PHP files:
 | `sanitize_text_field` | 18 |
 
 Output escaping is thorough; input validation and authorization are close to absent. The scanner targets that gap specifically, because `phpcs --standard=WordPress` does not see it.
+
+The plugin half taught the opposite lesson. A theme companion plugin escapes **eleven times more per file** than Envato's own updater plugin and is markedly less safe — because it runs one capability check per twenty files against the updater's one per file. Escaping density measures how much markup a file emits, not how carefully it was written.
 
 ## Install
 
@@ -79,6 +81,14 @@ Skills trigger automatically from what you ask. You can also invoke one by name:
 | **wp-security-audit** | Vulnerability classes with real examples, an audit workflow, a report format, and a scanner. |
 | **wp-performance** | Finding the actual bottleneck, conditional assets, N+1 queries, autoloaded options, caching layers, Core Web Vitals. |
 | **wp-accessibility** | WCAG 2.2, semantic templates, keyboard navigation, forms, focus management, `accessibility-ready`, structured data. |
+| **wp-seo** | Canonical ownership, sitemaps, archive bloat, schema without plugin conflicts, migrations that keep rankings. |
+
+### Lifecycle
+
+| Skill | Covers |
+|---|---|
+| **wp-deploy** | Environments, WP-CLI, serialized-data-safe migration, migration direction, destructive-operation safety. |
+| **wp-maintain** | Backups and verified restores, update strategy, monitoring, compromise triage, resumable long-running jobs. |
 
 ### Design and delivery
 
@@ -100,9 +110,9 @@ node skills/wp-security-audit/scripts/wp-scan.mjs <path> [--format text|json|md]
 
 Detects unguarded AJAX endpoints, `$wpdb->prepare()` calls with no placeholders, unprepared queries, reflected and stored XSS (including one-hop taint tracking through a variable), REST routes without `permission_callback`, unguarded save handlers, unsafe uploads, dangerous functions and missing ABSPATH guards.
 
-Bundled third-party libraries (TGMPA, Kirki, Redux, CMB2) are skipped — findings there are not actionable and bury the real ones. Exit code 1 on findings, so it gates CI.
+Bundled third-party libraries are skipped, including prefixed vendor directories (`vendor_wpstg`, `vendor-prefixed`) that mature plugins use to avoid version collisions. `phpcs:ignore` annotations are honoured. Exit code 1 on findings, so it gates CI.
 
-On the three reference themes it reports 7, 2 and 1 criticals across 356, 83 and 278 files — small enough to triage by hand, which is the design goal.
+It was tuned on commercial themes, then **re-tuned against professionally maintained plugins** — Wordfence, Duplicator Pro, WP Staging Pro, Ultimate Store Kit. That second pass mattered: it initially reported 113 criticals on Wordfence, all of them false positives in four systematic classes. After the fixes it reports 23. A scanner calibrated on one class of code fails silently on another, and `SKILL.md` documents what it still over- and under-reports.
 
 ### Architecture detector
 
