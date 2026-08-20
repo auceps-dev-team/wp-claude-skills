@@ -98,6 +98,15 @@ wp i18n make-pot . languages/mytheme.pot --domain=mytheme --exclude=node_modules
 
 For a theme, add `--headers='{"Report-Msgid-Bugs-To":"https://example.com/support"}'`. Regenerate on every release; a stale POT means new strings are untranslatable.
 
+
+Where WP-CLI is unavailable, this suite ships a stand-in that reads the same call signatures core does:
+
+```bash
+node skills/wp-i18n-rtl/scripts/make-pot.mjs <src> <out.pot> --domain=slug --package="Name"
+```
+
+It keeps `translators:` comments attached, records every `file:line` reference, and handles `_n()` plurals and `_x()` contexts. The part that earns its keep is what it reports at the end: calls whose text or domain is a **variable**, and strings found under a **different text domain**. Those two categories are precisely the silent failures, so seeing the count is the point.
+
 Verify your work — this is the fastest way to catch non-literal domains:
 
 ```bash
@@ -129,103 +138,6 @@ wp i18n make-json languages/ --no-purge
 
 The JSON filename embeds an MD5 of the script's relative path, which is why the files must be regenerated whenever a script moves. Forgetting this is why JS translations "stop working" after a refactor.
 
-## WPML and Polylang
-
-Ship a `wpml-config.xml` in the root. Both WPML and Polylang read it, so one file covers both:
-
-```xml
-<wpml-config>
-    <custom-fields>
-        <custom-field action="translate">_mytheme_subtitle</custom-field>
-        <custom-field action="copy">_mytheme_layout</custom-field>
-        <custom-field action="ignore">_mytheme_cache</custom-field>
-    </custom-fields>
-    <admin-texts>
-        <key name="mytheme_options">
-            <key name="footer_text" />
-            <key name="copyright" />
-        </key>
-    </admin-texts>
-    <custom-types>
-        <custom-type translate="1">mytheme_portfolio</custom-type>
-    </custom-types>
-    <taxonomies>
-        <taxonomy translate="1">mytheme_portfolio_category</taxonomy>
-    </taxonomies>
-</wpml-config>
-```
-
-Three actions with distinct meanings: `translate` — translator provides a value per language; `copy` — same value across all languages (layout choices, IDs); `ignore` — not synchronised at all (caches, timestamps). Marking a layout field `translate` produces a needless job for the translator; marking a subtitle `copy` makes it untranslatable. Both are common.
-
-`<admin-texts>` is what makes Customizer and theme option strings translatable — without it, footer text set in the Customizer appears in one language on every version of the site.
-
-For Polylang, register strings explicitly where they are not covered:
-
-```php
-if ( function_exists( 'pll_register_string' ) ) {
-    pll_register_string( 'mytheme-footer', mytheme_get_option( 'footer_text' ), 'My Theme' );
-}
-```
-
-Test with a real second language. Multilingual bugs — a hard-coded `home_url()`, a query missing the language filter — do not appear on a monolingual install.
-
-## RTL
-
-### Logical properties (preferred)
-
-Modern CSS makes most RTL stylesheets unnecessary. Logical properties flip automatically with the document direction:
-
-| Physical | Logical |
-|---|---|
-| `margin-left` | `margin-inline-start` |
-| `padding-right` | `padding-inline-end` |
-| `left: 0` | `inset-inline-start: 0` |
-| `text-align: left` | `text-align: start` |
-| `border-left` | `border-inline-start` |
-| `width` | `inline-size` |
-
-Write logical from the start and there is nothing to maintain. `float: left` has no logical equivalent — use flexbox or grid, where `flex-direction: row` already follows the writing direction.
-
-### Generated rtl.css
-
-For an existing physical-property stylesheet, generate rather than hand-write:
-
-```bash
-npm install --save-dev rtlcss
-npx rtlcss style.css style-rtl.css
-```
-
-WordPress loads `rtl.css` (theme root) or `style-rtl.css` automatically when the locale is RTL, provided you enqueue with `wp_style_add_data`:
-
-```php
-wp_enqueue_style( 'mytheme', get_stylesheet_uri(), array(), MYTHEME_VERSION );
-wp_style_add_data( 'mytheme', 'rtl', 'replace' );
-```
-
-`'replace'` swaps the file; `true` loads `-rtl.css` in addition. Regenerate on every CSS change — a hand-edited `rtl.css` drifts from its source within one release, and commercial themes routinely ship 185KB RTL files nobody has touched in a year.
-
-### What must not flip
-
-- Logos and brand marks
-- Phone numbers, and code or terminal output
-- Progress indicators for media playback
-- Icons with inherent direction that is not reading direction (a play button still points right)
-
-```css
-/* rtlcss respects these directives */
-/*rtl:ignore*/
-.brand-logo { margin-left: 1rem; }
-```
-
-### Testing
-
-```php
-// Force RTL temporarily
-add_filter( 'locale', fn() => 'ar' );
-```
-
-Or install Arabic or Hebrew from Settings → General. Check: text alignment, list bullets, form field order, dropdown positions, carousel direction, icon spacing, and anything absolutely positioned.
-
 ## Common failures
 
 | Symptom | Cause |
@@ -237,3 +149,33 @@ Or install Arabic or Hebrew from Settings → General. Check: text alignment, li
 | Customizer text stays in one language | Missing `<admin-texts>` in `wpml-config.xml`. |
 | RTL layout partly broken | `rtl.css` out of date with the source stylesheet. |
 | Dates in the wrong language | `date()` or `date_i18n()` instead of `wp_date()`. |
+
+## When the source language is not English
+
+WordPress treats the `msgid` as the source string, whatever language it is in.
+A French-primary site with French source strings therefore needs **no `fr_FR`
+catalogue at all** — with no translation, WordPress falls back to the msgid,
+which is already correct. Shipping an identity `fr_FR.po` is work that buys
+nothing and drifts the moment a string changes.
+
+Only the *other* languages need catalogues. On a FR/EN project the deliverable
+is `en_US.po`, and the plural rule differs from the source: French is
+`nplurals=2; plural=(n > 1)` while English is `nplurals=2; plural=(n != 1)`.
+Copying the header from the POT without changing that line gives wrong plurals
+at n=0.
+
+Two consequences for the code itself. Write source strings in the primary
+language, not in English "for convention" — a translator working from an
+English string you invented is translating your paraphrase rather than the real
+copy. And keep the `/* translators: */` comments in the source language too;
+they are read by whoever writes the catalogue, who in this arrangement is
+usually you.
+
+## Reference files
+
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
+| File | Covers |
+|---|---|
+| [`references/rtl.md`](references/rtl.md) | Logical CSS properties, generating rtl.css, what must not flip, testing |
+| [`references/multilingual.md`](references/multilingual.md) | wpml-config.xml actions, admin-texts, Polylang string registration |

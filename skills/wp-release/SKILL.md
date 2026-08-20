@@ -82,6 +82,18 @@ zip -r mytheme.zip mytheme \
   -x '*/.DS_Store' -x '*/Thumbs.db'
 ```
 
+A build script that runs the checks and refuses to package on failure removes the judgement call entirely. `scripts/build-example.mjs` in this skill is a working one — zero dependencies, and it gates on five things that are each a real shipped-defect class:
+
+| Gate | Catches |
+|---|---|
+| PHP lint on every file | A parse error that only fires on the customer's PHP version |
+| Security scan, critical = fail | The classes phpcs cannot see |
+| Version agreement across header, constant and readme | Silent drift, the most common release bug |
+| Referenced assets exist | A `wp_enqueue_style` pointing at a file that never shipped |
+| Catalogue newer than the PHP | New strings that are untranslatable |
+
+Two details worth copying. It writes the ZIP itself rather than shelling out, so the root directory name is guaranteed correct. And when a check has nothing to say it stays silent — a warning that fires on a package with no translatable strings teaches people to ignore warnings.
+
 Verify before uploading — this takes ten seconds and catches most packaging failures:
 
 ```bash

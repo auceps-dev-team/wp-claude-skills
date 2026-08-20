@@ -245,5 +245,42 @@
         "## Performance"
       ]
     }
+  },
+  "wp-design-system": {
+    "brand-assets.md": {
+      "title": "Integrating brand assets",
+      "covers": "Auditing a supplied logo, generating web variants including the inverse, wiring it into a theme, and the self-hosted font decision"
+    },
+    "auditing.md": {
+      "title": "Auditing an existing design system",
+      "covers": "Finding hard-coded colours, off-scale font sizes and magic spacing in a theme you inherited",
+      "sections": [
+        "## Auditing an existing theme"
+      ]
+    },
+    "scales.md": {
+      "title": "Type and spacing scales",
+      "covers": "Fluid typography with clamp, line height and measure, loading fonts, the spacing scale",
+      "sections": [
+        "## Typography",
+        "## Spacing"
+      ]
+    }
+  },
+  "wp-i18n-rtl": {
+    "rtl.md": {
+      "title": "RTL support",
+      "covers": "Logical CSS properties, generating rtl.css, what must not flip, testing",
+      "sections": [
+        "## RTL"
+      ]
+    },
+    "multilingual.md": {
+      "title": "WPML and Polylang",
+      "covers": "wpml-config.xml actions, admin-texts, Polylang string registration",
+      "sections": [
+        "## WPML and Polylang"
+      ]
+    }
   }
 }
