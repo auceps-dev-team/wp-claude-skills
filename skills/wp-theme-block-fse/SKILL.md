@@ -32,120 +32,31 @@ mytheme/
 
 A theme is treated as a block theme when `templates/index.html` exists. Adding `theme.json` alone to a classic theme makes it *hybrid*, not block — a genuinely useful middle ground covered at the end.
 
-## theme.json
+## "Gutenberg theme" is a marketing label, not an architecture
 
-Use schema version 3 (WP 6.6+). The `$schema` line gives you editor autocomplete and is worth including.
+Three commercial themes sold as Gutenberg themes were measured. None is a block theme:
 
-```json
-{
-  "$schema": "https://schemas.wp.org/trunk/theme.json",
-  "version": 3,
-  "settings": {
-    "appearanceTools": true,
-    "useRootPaddingAwareAlignments": true,
-    "layout": { "contentSize": "720px", "wideSize": "1200px" },
-    "color": {
-      "custom": false,
-      "defaultPalette": false,
-      "palette": [
-        { "slug": "base",     "color": "#ffffff", "name": "Base" },
-        { "slug": "contrast", "color": "#111111", "name": "Contrast" },
-        { "slug": "primary",  "color": "#0a4bc1", "name": "Primary" }
-      ]
-    },
-    "typography": {
-      "fluid": true,
-      "fontFamilies": [
-        {
-          "slug": "body",
-          "name": "Body",
-          "fontFamily": "Inter, sans-serif",
-          "fontFace": [
-            {
-              "fontFamily": "Inter",
-              "fontWeight": "400 700",
-              "fontStyle": "normal",
-              "fontStretch": "normal",
-              "src": [ "file:./assets/fonts/inter.woff2" ]
-            }
-          ]
-        }
-      ],
-      "fontSizes": [
-        { "slug": "small",  "size": "0.875rem", "name": "Small" },
-        { "slug": "medium", "size": "1rem",     "name": "Medium" },
-        {
-          "slug": "large",
-          "size": "1.5rem",
-          "name": "Large",
-          "fluid": { "min": "1.25rem", "max": "2rem" }
-        }
-      ]
-    },
-    "spacing": {
-      "spacingScale": { "steps": 0 },
-      "spacingSizes": [
-        { "slug": "30", "size": "1rem",   "name": "1" },
-        { "slug": "50", "size": "2rem",   "name": "3" },
-        { "slug": "70", "size": "4rem",   "name": "5" }
-      ]
-    }
-  },
-  "styles": {
-    "color": { "background": "var(--wp--preset--color--base)", "text": "var(--wp--preset--color--contrast)" },
-    "typography": { "fontFamily": "var(--wp--preset--font-family--body)", "lineHeight": "1.6" },
-    "spacing": { "padding": { "left": "var(--wp--preset--spacing--50)", "right": "var(--wp--preset--spacing--50)" } },
-    "elements": {
-      "link":   { "color": { "text": "var(--wp--preset--color--primary)" },
-                  ":hover": { "typography": { "textDecoration": "none" } } },
-      "button": { "color": { "background": "var(--wp--preset--color--primary)", "text": "var(--wp--preset--color--base)" },
-                  "border": { "radius": "4px" } },
-      "h1":     { "typography": { "fontSize": "var(--wp--preset--font-size--large)" } }
-    },
-    "blocks": {
-      "core/quote": { "border": { "left": { "width": "3px", "style": "solid", "color": "var(--wp--preset--color--primary)" } } }
-    }
-  },
-  "templateParts": [
-    { "name": "header", "title": "Header", "area": "header" },
-    { "name": "footer", "title": "Footer", "area": "footer" }
-  ],
-  "customTemplates": [
-    { "name": "page-full-width", "title": "Full width", "postTypes": [ "page" ] }
-  ]
-}
-```
+| Signal | Carrino 1.8.7 | Cartify 1.4.0 | Gutentype 2.1.13 |
+|---|---|---|---|
+| `theme.json` | no | no | no |
+| `templates/*.html` | 0 | 0 | 0 |
+| `register_block_pattern` | **0** | **0** | **0** |
+| `register_block_style` | **0** | **0** | **0** |
+| CSS files styling `wp-block-*` | 6 | 4 | 9 |
+| `align-wide` references | 41 | 23 | 31 |
+| PHP files | 44 | 117 | 159 |
 
-### settings vs styles
+What the label actually denotes is **a classic PHP theme that ships CSS for core block classes and declares wide alignment**. That is a real and useful thing — it is what makes core blocks look native rather than unstyled — but it is not full site editing, it gives the user no Site Editor, and it contributes nothing to the global styles system.
 
-`settings` defines *what is available* — it generates CSS custom properties and populates the editor UI. `styles` defines *what is applied*. A palette entry in `settings.color.palette` creates `--wp--preset--color--primary` and a swatch; it changes nothing visually until something in `styles` (or a user) uses it.
+So when a client says "we bought a Gutenberg theme", establish which of three things they have before planning anything:
 
-### Generated CSS variables
+| They have | Tell by | What you can change |
+|---|---|---|
+| Block theme | `templates/index.html` exists | Everything, in the Site Editor |
+| Hybrid | `theme.json` plus PHP templates | Editor settings and global styles; layout stays in PHP |
+| Block-styled classic | CSS targeting `wp-block-*`, no `theme.json` | PHP templates and CSS only |
 
-Every preset becomes a variable following a fixed pattern:
-
-```
---wp--preset--color--{slug}
---wp--preset--font-size--{slug}
---wp--preset--font-family--{slug}
---wp--preset--spacing--{slug}
---wp--custom--{path--in--kebab-case}
-```
-
-`settings.custom` is a free-form bag for your own tokens:
-
-```json
-"custom": { "layout": { "gutter": "1.5rem" } }
-```
-becomes `--wp--custom--layout--gutter`. Use it for values that are not first-class WordPress concepts.
-
-### Locking the palette
-
-`"custom": false` removes the arbitrary colour picker, `"defaultPalette": false` removes WordPress's own colours. Together they constrain users to your design system — the right default for a client site, usually the wrong one for a theme sold to the public.
-
-### Fluid typography
-
-`"fluid": true` under `typography` generates `clamp()` for every font size automatically. Per-size `fluid.min`/`fluid.max` overrides the calculation where the automatic range is wrong. This replaces hand-written media queries for type.
+The third is by far the most common on the commercial market, and it is the one where adding a `theme.json` is the highest-value change available — see *Hybrid themes* below.
 
 ## Hybrid themes
 
@@ -194,3 +105,13 @@ The depth lives alongside this file. Read the one that matches the task rather t
 |---|---|
 | [`references/templates-and-patterns.md`](references/templates-and-patterns.md) | HTML template markup, pattern registration, style variations, editor parity |
 | [`references/adoption.md`](references/adoption.md) | Symptom-to-cause table for theme.json problems, and the safe migration order |
+
+## Reference files
+
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
+| File | Covers |
+|---|---|
+| [`references/templates-and-patterns.md`](references/templates-and-patterns.md) | HTML template markup, pattern registration, style variations, editor parity |
+| [`references/adoption.md`](references/adoption.md) | Symptom-to-cause table for theme.json problems, and the safe migration order |
+| [`references/theme-json.md`](references/theme-json.md) | Full annotated example, settings vs styles, generated CSS variables, palette locking, fluid typography |

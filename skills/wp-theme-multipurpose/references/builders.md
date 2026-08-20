@@ -55,3 +55,21 @@ add_action( 'elementor/frontend/after_register_styles', function () {
 ```
 
 Details in the `wp-performance` skill.
+
+
+## Elementor: assets declared per widget
+
+Elementor Pro 3.x solves the conditional-loading problem declaratively, and it is worth copying whichever builder you target. Every widget names its own assets:
+
+```php
+// modules/animated-headline/widgets/animated-headline.php
+public function get_style_depends(): array {
+    return [ 'widget-animated-headline' ];
+}
+```
+
+Elementor then enqueues that handle **only on pages where the widget is actually placed**. Across Elementor Pro's 119 widget files there are 71 `get_style_depends()` and 26 `get_script_depends()` declarations — the mechanism is the norm in that codebase, not an optimisation applied to a few heavy widgets.
+
+Two structural details alongside it. Widgets extend an intermediate `Base_Widget extends Widget_Base` rather than the framework class directly, which gives one place to add cross-cutting behaviour to every widget — only a single direct `extends Widget_Base` exists in the whole plugin. And control registration is the bulk of the work: 182 `register_controls()` implementations across those 119 files.
+
+Compare this with the WPBakery figures above, where a theme registered 42 elements eagerly with no `is_admin()` gate. The difference is not the builder, it is whether the integration uses the mechanism the builder provides. Both Elementor and WPBakery offer one; themes routinely ignore it.

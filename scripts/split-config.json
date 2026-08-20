@@ -4,70 +4,111 @@
       "title": "Accessible markup patterns",
       "covers": "Headings, images and alt text, navigation and menus, forms and errors",
       "intro": "The four places WordPress themes fail most often. Each entry is the markup, the rule behind it, and the failure it prevents.",
-      "sections": ["## Headings", "## Images", "## Navigation", "## Forms"]
+      "sections": [
+        "## Headings",
+        "## Images",
+        "## Navigation",
+        "## Forms"
+      ]
     },
     "conformance.md": {
       "title": "Conformance, motion and structured data",
       "covers": "Colour and motion, WCAG 2.2 criteria, accessibility-ready review, schema.org output",
-      "sections": ["## Colour and motion", "## WCAG 2.2 additions", "## accessibility-ready", "## Structured data"]
+      "sections": [
+        "## Colour and motion",
+        "## WCAG 2.2 additions",
+        "## accessibility-ready",
+        "## Structured data"
+      ]
     }
   },
-
   "wp-blocks-gutenberg": {
     "building-blocks.md": {
       "title": "Building a block",
       "covers": "Dynamic render, the Edit component, InnerBlocks",
-      "sections": ["## Dynamic block render", "## Edit component", "## InnerBlocks"]
+      "sections": [
+        "## Dynamic block render",
+        "## Edit component",
+        "## InnerBlocks"
+      ]
     },
     "advanced.md": {
       "title": "Advanced block techniques",
       "covers": "Block bindings, shortcode migration, validation errors, asset scoping, Interactivity API",
-      "sections": ["## Block bindings (WP 6.5+)", "## Converting a shortcode", "## Fixing \"invalid content\"", "## Server-side and editor styles", "## Interactivity API (WP 6.5+)"]
+      "sections": [
+        "## Block bindings (WP 6.5+)",
+        "## Converting a shortcode",
+        "## Fixing \"invalid content\"",
+        "## Server-side and editor styles",
+        "## Interactivity API (WP 6.5+)"
+      ]
     }
   },
-
   "wp-child-theme": {
     "troubleshooting.md": {
       "title": "Overrides, assets and troubleshooting",
       "covers": "Replacing parent assets, translations, the debugging order, a ready scaffold",
-      "sections": ["## Overriding assets and images", "## Translations", "## Debugging \"my override isn't working\"", "## Scaffold"]
+      "sections": [
+        "## Overriding assets and images",
+        "## Translations",
+        "## Debugging \"my override isn't working\"",
+        "## Scaffold"
+      ]
     }
   },
-
   "wp-performance": {
     "queries-and-caching.md": {
       "title": "Queries and caching",
       "covers": "N+1 patterns, expensive query arguments, autoloaded options, transients, object and page cache",
-      "sections": ["## Queries", "## Caching"]
+      "sections": [
+        "## Queries",
+        "## Caching"
+      ]
     },
     "delivery.md": {
       "title": "Image and metric delivery",
       "covers": "Image sizes and responsive markup, Core Web Vitals (LCP, CLS, INP)",
-      "sections": ["## Images", "## Core Web Vitals"]
+      "sections": [
+        "## Images",
+        "## Core Web Vitals"
+      ]
     }
   },
-
   "wp-plugin-architecture": {
     "data-and-admin.md": {
       "title": "Data models and admin surfaces",
       "covers": "Custom post types and taxonomies, Settings API, admin pages, metaboxes",
-      "sections": ["## Custom post types", "## Settings API", "## Admin pages", "## Metaboxes"]
+      "sections": [
+        "## Custom post types",
+        "## Settings API",
+        "## Admin pages",
+        "## Metaboxes"
+      ]
     },
     "rest-cron-tables.md": {
       "title": "REST, cron and custom tables",
       "covers": "REST route registration and schemas, scheduled events, custom tables and migrations",
-      "sections": ["## REST endpoints", "## Cron", "## Custom tables"]
+      "sections": [
+        "## REST endpoints",
+        "## Cron",
+        "## Custom tables"
+      ]
     }
   },
-
   "wp-release": {
     "distribution.md": {
       "title": "Distribution and directory requirements",
       "covers": "readme.txt, changelogs, asset builds, wordpress.org and marketplace rules, CI",
-      "sections": ["## readme.txt", "## Changelog", "## Building assets", "## wordpress.org requirements", "## Marketplace (ThemeForest and similar)", "## Automating"]
+      "sections": [
+        "## readme.txt",
+        "## Changelog",
+        "## Building assets",
+        "## wordpress.org requirements",
+        "## Marketplace (ThemeForest and similar)",
+        "## Automating"
+      ]
     }
   },
-
   "wp-standards": {
     "escaping-cheatsheet.md": {
       "title": "Escaping and sanitizing cheatsheet",
@@ -80,10 +121,15 @@
     "conventions.md": {
       "title": "Conventions: i18n, hooks, paths, PHP and tooling",
       "covers": "Translation functions, hook timing, path helpers, PHP compatibility, phpcs setup",
-      "sections": ["## Internationalization", "## Hooks", "## File and path conventions", "## PHP compatibility", "## Tooling"]
+      "sections": [
+        "## Internationalization",
+        "## Hooks",
+        "## File and path conventions",
+        "## PHP compatibility",
+        "## Tooling"
+      ]
     }
   },
-
   "wp-security-audit": {
     "vulnerability-classes.md": {
       "title": "WordPress vulnerability classes",
@@ -96,67 +142,108 @@
     "reporting.md": {
       "title": "Writing the audit report",
       "covers": "Report template, severity calibration, the three most common fixes, security theatre to flag as cosmetic",
-      "sections": ["## Report format", "## Severity calibration", "## Fixing what you find", "## Security theatre to push back on"]
+      "sections": [
+        "## Report format",
+        "## Severity calibration",
+        "## Fixing what you find",
+        "## Security theatre to push back on"
+      ]
     }
   },
-
   "wp-theme-block-fse": {
     "templates-and-patterns.md": {
       "title": "Block templates, patterns and variations",
       "covers": "HTML template markup, pattern registration, style variations, editor parity",
-      "sections": ["## HTML templates", "## Patterns", "## Style variations", "## Editor parity"]
+      "sections": [
+        "## HTML templates",
+        "## Patterns",
+        "## Style variations",
+        "## Editor parity"
+      ]
     },
     "adoption.md": {
       "title": "Adopting blocks in an existing theme",
       "covers": "Symptom-to-cause table for theme.json problems, and the safe migration order",
-      "sections": ["## Common failures", "## Migration order"]
+      "sections": [
+        "## Common failures",
+        "## Migration order"
+      ]
+    },
+    "theme-json.md": {
+      "title": "theme.json reference",
+      "covers": "Full annotated example, settings vs styles, generated CSS variables, palette locking, fluid typography",
+      "sections": [
+        "## theme.json"
+      ]
     }
   },
-
   "wp-theme-classic": {
     "setup.md": {
       "title": "Theme setup and document shell",
       "covers": "functions.php organisation, theme supports, enqueueing, header.php and footer.php",
-      "sections": ["## functions.php", "## header.php and footer.php"]
+      "sections": [
+        "## functions.php",
+        "## header.php and footer.php"
+      ]
     },
     "components.md": {
       "title": "Navigation, widgets and conditionals",
       "covers": "wp_nav_menu and walkers, widget areas, conditional tags and their traps",
-      "sections": ["## Navigation", "## Widget areas", "## Conditional tags"]
+      "sections": [
+        "## Navigation",
+        "## Widget areas",
+        "## Conditional tags"
+      ]
     }
   },
-
   "wp-theme-multipurpose": {
     "packaging.md": {
       "title": "Sections, bundled plugins and demo import",
       "covers": "Front-page section systems, TGMPA, demo importers and their security checklist",
-      "sections": ["## Front-page sections", "## Bundled plugins (TGMPA)", "## Demo import"]
+      "sections": [
+        "## Front-page sections",
+        "## Bundled plugins (TGMPA)",
+        "## Demo import"
+      ]
     },
     "builders.md": {
       "title": "Page-builder libraries and load cost",
       "covers": "Custom builder elements, lazy registration, conditional asset loading",
-      "sections": ["## Page-builder element libraries", "## Performance"]
+      "sections": [
+        "## Page-builder element libraries",
+        "## Performance"
+      ]
     }
   },
-
   "wp-theme-options": {
     "advanced.md": {
       "title": "Override layers, Kirki and migrations",
       "covers": "Per-section override resolution, Kirki field declaration, renaming options safely",
-      "sections": ["## Override layers", "## Kirki", "## Migrating options"]
+      "sections": [
+        "## Override layers",
+        "## Kirki",
+        "## Migrating options"
+      ]
     }
   },
-
   "wp-woocommerce": {
     "products.md": {
       "title": "Product loops and product data",
       "covers": "Shop and archive queries, the CRUD API, custom product fields",
-      "sections": ["## Product loops", "## Product data"]
+      "sections": [
+        "## Product loops",
+        "## Product data"
+      ]
     },
     "checkout-and-orders.md": {
       "title": "Cart, checkout, orders and emails",
       "covers": "Classic vs block checkout, cart fees, HPOS order storage, transactional emails, store performance",
-      "sections": ["## Cart and checkout", "## HPOS (High-Performance Order Storage)", "## Emails", "## Performance"]
+      "sections": [
+        "## Cart and checkout",
+        "## HPOS (High-Performance Order Storage)",
+        "## Emails",
+        "## Performance"
+      ]
     }
   }
 }

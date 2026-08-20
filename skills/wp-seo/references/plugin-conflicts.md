@@ -1,6 +1,6 @@
 # SEO plugin conflicts
 
-Three plugins cover most WordPress sites: Yoast SEO, Rank Math and SEOPress. They solve the same problems and each assumes it is the only one installed. Almost every WordPress SEO bug that is not a content problem is a conflict between one of these and either the theme or another plugin.
+Four plugins cover most WordPress sites: Yoast SEO, Rank Math, SEOPress and All in One SEO. They solve the same problems and each assumes it is the only one installed. Almost every WordPress SEO bug that is not a content problem is a conflict between one of these and either the theme or another plugin.
 
 ## Contents
 
@@ -10,6 +10,7 @@ Three plugins cover most WordPress sites: Yoast SEO, Rank Math and SEOPress. The
 - [Two SEO plugins at once](#two-seo-plugins-at-once)
 - [Theme conflicts](#theme-conflicts)
 - [Migrating between plugins](#migrating-between-plugins)
+- [Premium add-ons are separate plugins](#premium-add-ons-are-separate-plugins)
 
 ## What each plugin takes over
 
@@ -84,6 +85,8 @@ Plus `rank_math/frontend/canonical`, `rank_math/frontend/title`, `rank_math/site
 
 **SEOPress** — `seopress_titles_canonical`, `seopress_titles_title`, `seopress_schemas_json_ld`.
 
+**All in One SEO** — the schema entry point is `aioseo_schema_output`, with `aioseo_schema_disable` to suppress it entirely and `aioseo_schema_breadcrumbs_home` for the breadcrumb root. Sitemap control goes through `aioseo_sitemap_posts`, `aioseo_sitemap_post` and `aioseo_sitemap_additional_pages`; `aioseo_rest_api_disable` turns off its REST surface. Verified against All in One SEO Pack Pro 4.9.9.
+
 ## Two SEO plugins at once
 
 This happens more than it should — a site inherits Yoast, someone installs Rank Math to try it, and neither is removed. The symptoms are unmistakable once you know them:
@@ -133,3 +136,19 @@ Order that works:
 6. Resubmit the sitemap in Search Console and watch coverage for a few weeks.
 
 Redirects are **not** carried over by these importers if they lived in the old plugin's premium redirect module. Export them separately, and prefer moving them to the server config anyway.
+
+
+## Premium add-ons are separate plugins
+
+Yoast SEO Premium, Rank Math Pro and AIOSEO Pro are **add-ons**, not replacements. The filters that matter for integration — canonical, title, schema graph — live in the free plugin; the add-on ships the extra features. Two consequences:
+
+- Grepping a Premium package for `wpseo_schema_graph` finds nothing, because that filter is in the free plugin. Confirm which package you are looking at before concluding a hook does not exist.
+- Deactivating the free plugin disables the Premium one entirely.
+
+### Redirects live outside the usual meta
+
+Yoast Premium 28.3 stores redirects in dedicated option rows, not post meta: `wpseo-premium-redirects`, `wpseo-premium-redirects-regex`, plus separate `-export-plain` and `-export-regex` options.
+
+This is what makes the migration advice concrete. A plugin-to-plugin importer that walks post meta will not carry redirects across, because they were never in post meta. Export them explicitly.
+
+Yoast also ships `classes/redirect/exporters/redirect-htaccess-exporter.php` — the vendor's own path for moving redirects into the server config. Taking it is the right call at any scale: a database-backed redirect table adds a lookup to every 404, and the export exists precisely because that stops being acceptable.

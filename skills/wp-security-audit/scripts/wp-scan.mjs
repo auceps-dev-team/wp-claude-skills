@@ -413,6 +413,18 @@ function ruleTaintedVar(file, src, out) {
   }
   if (!tainted.size) return;
 
+  // A variable re-assigned through a sanitizer is no longer tainted:
+  //     $m = $_GET['message'];
+  //     $m = sanitize_text_field( $m );   <-- cleared here
+  //     echo $m;
+  // Without this the rule reports code that did exactly the right thing.
+  for (const name of [...tainted.keys()]) {
+    const clean = new RegExp(
+      String.raw`\$${name}\s*=\s*[^;]{0,200}?(?:${RE_SAFE.source})`,
+    );
+    if (clean.test(src)) tainted.delete(name);
+  }
+
   for (const [name, info] of tainted) {
     const echo = new RegExp(`(?:echo|print)\\s+[^;]{0,300}?\\$${name}\\b[^;]{0,200};`, 'g');
     let e;
@@ -438,7 +450,23 @@ function ruleRest(file, src, out) {
       // The route args are frequently composed — `$baseRoute + array( ... )` or
       // array_merge( $shared, array( ... ) ) — which puts permission_callback
       // out of sight of this call. Report it as unverifiable rather than absent.
-      if (/\$\w+\s*\+|array_merge\s*\(|\.\.\.\$\w+/.test(args)) {
+      // Route args passed wholly as a variable: `register_rest_route( ns, path,
+      // $route_args )`. Look at the nearest assignment before deciding — Yoast,
+      // AIOSEO and most structured plugins build the array first and pass it,
+      // and calling that "no permission_callback" is simply wrong.
+      const varArg = /^\s*[^,]+,\s*[^,]+,\s*\$(\w+)\s*\)?\s*$/.exec(args)
+        || /,\s*\$(\w+)\s*$/.exec(args.trim());
+      if (varArg) {
+        const before = src.slice(0, m.index);
+        const assignRe = new RegExp(`\$${varArg[1]}\s*=[^=]`, 'g');
+        let last = -1;
+        let a;
+        while ((a = assignRe.exec(before)) !== null) last = a.index;
+        if (last !== -1 && /permission_callback/.test(before.slice(last))) {
+          continue;
+        }
+      }
+      if (/\$\w+\s*\+|array_merge\s*\(|\.\.\.\$\w+|^\s*[^,]+,\s*[^,]+,\s*\$\w+/.test(args)) {
         push(out, 'medium', 'rest-permission-unverifiable', file, lineOf(src, m.index),
           'register_rest_route() builds its arguments from a variable, so permission_callback cannot be confirmed from this call. Follow the composed array before drawing a conclusion.',
           snippetAt(src, m.index),

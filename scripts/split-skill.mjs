@@ -77,8 +77,17 @@ function splitSkill(name) {
 
   // Verify every configured heading actually exists — a typo would silently
   // produce an empty reference file, which is worse than not splitting.
+  //
+  // A heading that is already gone AND whose reference file already exists is
+  // simply a split that ran previously, not an error. Treating it as one made
+  // the tool refuse to run on any partially-split skill, which is exactly the
+  // case you hit when adding one more section later.
   const present = new Set(sections.map((s) => s.heading).filter(Boolean));
-  const missing = [...wanted.keys()].filter((h) => !present.has(h));
+  const refDirPath = path.join(SKILLS, name, 'references');
+  const missing = [...wanted.entries()]
+    .filter(([h, refFile]) => !present.has(h)
+      && !fs.existsSync(path.join(refDirPath, refFile)))
+    .map(([h]) => h);
   if (missing.length) {
     console.error(`  ! ${name}: headings not found: ${missing.join(' | ')}`);
     return null;

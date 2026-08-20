@@ -94,6 +94,30 @@ add_action( 'init', function () {
 
 Point at the **build** directory, not `src`. For several blocks, `wp_register_block_types_from_metadata_collection()` (WP 6.7+) registers a whole directory in one manifest-driven call.
 
+## What shipped block plugins actually do
+
+Measured across 68 blocks from three commercial plugins — Essential Blocks Pro 3.1.0 (25), GutenKit Pro 2.3.9 (37) and Yoast SEO Premium 28.3 (6):
+
+| Signal | Essential Blocks | GutenKit |
+|---|---|---|
+| `apiVersion` | 3 on all 25 | 3 on all 37 |
+| Dynamic (`render` in metadata) | **0** | 11 |
+| `viewScript` | 0 | 21 |
+| `supports.interactivity` | 0 | 3 |
+| `supports.html: false` | 4 of 25 | **37 of 37** |
+| Attributes declared in `block.json` | 0 | 4953 (~134/block) |
+| Distinct asset handles | **3** for 25 blocks | 12, plus 120 `file:` references |
+
+**`apiVersion: 3` is universal.** All 68 blocks use it, so the iframed editor canvas is the baseline rather than an opt-in. Any block relying on the editor's document — measuring `window`, reaching outside its own DOM — is already broken in shipped software.
+
+**Two opposite philosophies of `block.json`.** GutenKit declares everything in metadata: attributes, supports, per-block `style` / `viewScript` / `render`, resolved through 120 `file:` references. Essential Blocks ships a near-empty `block.json` — name, `apiVersion`, `category`, one shared `editorScript` handle — and registers attributes in JavaScript at runtime.
+
+The consequence is not stylistic. Three asset handles for 25 blocks means **one editor bundle loads for all of them**, with no per-block splitting and no way for metadata to drive conditional front-end loading. It also means `register_block_type( __DIR__ )` learns almost nothing server-side: no attributes, so no metadata-driven `render`, and the block is invisible to server-side tooling. Declaring in metadata costs nothing and buys all of that back.
+
+**`supports: { html: false }` on every GutenKit block** removes the editor's "Edit as HTML" option. For a static block that is protective — a user who hand-edits the markup breaks the `save()` comparison and invalidates their own content.
+
+**Nobody escapes deprecations.** Both plugins carry them (13 and 10 occurrences), which is the running cost of static blocks made concrete, and the strongest argument for defaulting to dynamic.
+
 ## Variations vs styles vs new blocks
 
 Before writing a block, check whether you need one:
