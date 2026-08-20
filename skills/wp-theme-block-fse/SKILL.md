@@ -105,13 +105,4 @@ The depth lives alongside this file. Read the one that matches the task rather t
 |---|---|
 | [`references/templates-and-patterns.md`](references/templates-and-patterns.md) | HTML template markup, pattern registration, style variations, editor parity |
 | [`references/adoption.md`](references/adoption.md) | Symptom-to-cause table for theme.json problems, and the safe migration order |
-
-## Reference files
-
-The depth lives alongside this file. Read the one that matches the task rather than all of them:
-
-| File | Covers |
-|---|---|
-| [`references/templates-and-patterns.md`](references/templates-and-patterns.md) | HTML template markup, pattern registration, style variations, editor parity |
-| [`references/adoption.md`](references/adoption.md) | Symptom-to-cause table for theme.json problems, and the safe migration order |
 | [`references/theme-json.md`](references/theme-json.md) | Full annotated example, settings vs styles, generated CSS variables, palette locking, fluid typography |

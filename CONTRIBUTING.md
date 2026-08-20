@@ -100,6 +100,38 @@ If you disagree with any of these, argue it in an issue with an example — the 
 
 ## Corpus
 
-Skills are validated against real WordPress packages. The current corpus is three commercial multipurpose themes and the plugins they bundle: Bizix 2.2.3, Stratego 1.4.0, TM Moody 2.6.1, plus Gyan Elements, Insight Core, Envato Market, Slider Revolution and WPBakery — roughly 1,800 PHP files.
+Skills are validated against real WordPress packages. The corpus has grown in
+three passes, and each figure quoted in a skill refers to the pass that produced
+it rather than to some running total:
 
-Known gaps, where the skills rest on knowledge rather than measurement: block/FSE themes, custom Gutenberg blocks, and a WooCommerce store built with the block checkout. Contributions that close these are the most valuable ones available.
+| Pass | What was measured | Files |
+|---|---|---|
+| 1 | Bizix 2.2.3, Stratego 1.4.0, TM Moody 2.6.1 — theme code only | ~717 |
+| 2 | The plugins those themes bundle: Gyan Elements, Insight Core, Envato Market, Slider Revolution, WPBakery | ~1,100 |
+| 3 | Professionally maintained plugins: Wordfence 9.0.0, Duplicator Pro 4.6.9, WP Staging Pro 6.9.2, Ultimate Store Kit Pro 2.7.2 — first-party code, vendored dependencies excluded | 2,869 |
+| 4 | Block plugins and SEO plugins: Essential Blocks Pro, GutenKit Pro, Advanced Gutenberg Pro, Elementor Pro, Yoast Premium, AIOSEO Pro | ~1,900 |
+
+**These packages are not in the repository and cannot be.** They are paid
+commercial products under licences that forbid redistribution. That is a real
+limit on the founding rule, and it is better stated than glossed: a contributor
+cannot re-run the measurements without buying the same packages.
+
+What that means in practice for the rule *every claim must be checkable*:
+
+- A skill quoting a number must name the package **and version** it came from,
+  so anyone holding that package can verify it — several already do
+  (`Wordfence 9.0.0`, `TM Moody 2.6.1`).
+- The **command** must be in the skill or the commit message, so the method is
+  reproducible even when the corpus is not.
+- A scanner rule needs a **fixture in the repository** — `wp-scan.mjs` ships one
+  in CI, and that fixture is redistributable because it is code written here.
+
+Where a claim cannot meet any of those three, it should be softened to what it
+is: an observation, not a measurement.
+
+Known gaps, where the skills still rest on knowledge rather than measurement:
+a genuine block/FSE theme (the three sold as "Gutenberg themes" that were
+measured turned out to be classic themes styling core blocks), a WooCommerce
+store using the block checkout rather than the shortcode one, and RTL beyond
+generated stylesheets. Contributions that close these are the most valuable
+ones available.

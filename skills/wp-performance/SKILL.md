@@ -139,7 +139,7 @@ rg -n "new WP_Query|get_posts\(" --glob '*.php' | head -30
 rg -n "posts_per_page['\"]?\s*=>\s*-1" --glob '*.php'
 
 # Cache-busting by timestamp
-rg -n "time\(\)|filemtime\(" --glob '*.php' | rg "enqueue|register" 
+rg -n "time\(\)|filemtime\(" --glob '*.php' | rg "enqueue|register"
 
 # Total shipped asset weight
 find . -name '*.css' -o -name '*.js' | xargs du -ch 2>/dev/null | tail -1

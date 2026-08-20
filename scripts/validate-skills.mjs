@@ -118,6 +118,24 @@ function validateSkill(name) {
     }
   }
 
+  // --- no duplicated sections --------------------------------------------
+  //
+  // A non-idempotent tooling pass appended a second routing table to three
+  // skills in this suite, and in one of them the stray rows landed inside an
+  // unrelated table. Nothing caught it: the file still parsed, still validated,
+  // and still read plausibly. Duplicated content is injected into context on
+  // every trigger, so it costs real tokens for no benefit.
+  const headings = fm.body.match(/^## .+$/gm) || [];
+  const seenHeading = new Set();
+  for (const h of headings) {
+    if (seenHeading.has(h)) {
+      add('error', name, 'duplicate-section',
+        `"${h.trim()}" appears more than once — a tooling pass probably ran twice`);
+      break;
+    }
+    seenHeading.add(h);
+  }
+
   // --- scripts are documented --------------------------------------------
   const scriptDir = path.join(dir, 'scripts');
   if (fs.existsSync(scriptDir)) {
@@ -132,7 +150,7 @@ function validateSkill(name) {
   // --- cross-references resolve ------------------------------------------
   const known = fs.readdirSync(SKILLS).filter((d) => fs.statSync(path.join(SKILLS, d)).isDirectory());
   const seen = new Set();
-  for (const m of fm.body.matchAll(/`(wp-(?:theme|plugin|blocks|standards|security|performance|accessibility|design|i18n|release|project|child|woocommerce)[a-z-]*)`/g)) {
+  for (const m of fm.body.matchAll(/`(wp-(?:theme|plugin|blocks|standards|security|performance|accessibility|design|i18n|release|project|child|woocommerce|deploy|maintain|seo)[a-z-]*)`/g)) {
     if (!known.includes(m[1]) && !seen.has(m[1])) {
       seen.add(m[1]);
       add('error', name, 'broken-cross-reference', `references unknown skill \`${m[1]}\``);

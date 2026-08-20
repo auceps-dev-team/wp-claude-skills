@@ -96,6 +96,20 @@ function splitSkill(name) {
   const kept = [];
   const moved = new Map();           // refFile -> [section, ...]
   for (const s of sections) {
+    // Drop any routing table a previous run wrote. Without this the tool is not
+    // idempotent: a second pass leaves the old, shorter table in place and adds
+    // a longer one below it, a third adds a third. Three skills here were
+    // corrupted that way, and in one the stray rows landed inside an unrelated
+    // table — changing what that table appeared to say, not just repeating it.
+    if ( s.heading === '## Reference files' ) continue;
+
+    // A routing row that ended up outside any heading, which is exactly how the
+    // wp-standards damage presented: two reference rows injected into the
+    // middle of the security obligations table.
+    s.lines = s.lines.filter(
+      ( line ) => ! /^\|\s*\[`references\/[\w.-]+`\]\(references\/[\w.-]+\)\s*\|/.test( line )
+    );
+
     const target = s.heading ? wanted.get(s.heading) : undefined;
     if (target) {
       if (!moved.has(target)) moved.set(target, []);

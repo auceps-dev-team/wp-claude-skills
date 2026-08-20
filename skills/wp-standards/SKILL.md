@@ -21,8 +21,6 @@ Three separate obligations, three separate mistakes:
 
 | Obligation | Where | Failure mode |
 |---|---|---|
-| [`references/escaping-cheatsheet.md`](references/escaping-cheatsheet.md) | Output context to escaping function, input source to sanitizer, the functions that only look like sanitizers |
-| [`references/capabilities.md`](references/capabilities.md) | Capability per action, meta capabilities and object IDs, the canonical save_post guard, CPT capabilities |
 | Sanitize/validate | data coming *in* from `$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, REST, APIs | stored XSS, SQL injection, option poisoning |
 | Escape | data going *out* to HTML, attributes, JS, URLs | reflected XSS |
 | Authorize | any state change | privilege escalation, CSRF |
@@ -194,4 +192,6 @@ The depth lives alongside this file. Read the one that matches the task rather t
 
 | File | Covers |
 |---|---|
+| [`references/escaping-cheatsheet.md`](references/escaping-cheatsheet.md) | Output context to escaping function, input source to sanitizer, the functions that only look like sanitizers |
+| [`references/capabilities.md`](references/capabilities.md) | Capability per action, meta capabilities and object IDs, the canonical save_post guard, CPT capabilities |
 | [`references/conventions.md`](references/conventions.md) | Translation functions, hook timing, path helpers, PHP compatibility, phpcs setup |

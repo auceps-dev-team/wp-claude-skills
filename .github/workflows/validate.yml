@@ -17,6 +17,20 @@ jobs:
       - name: Validate the authoring standard
         run: node scripts/validate-skills.mjs
 
+      - name: Re-running the split changes nothing
+        run: |
+          # The splitter appends a routing table. When it was not idempotent a
+          # second pass left the old table in place and added a longer one
+          # below it, which corrupted three skills before anyone noticed.
+          BEFORE=$(find skills -name '*.md' -exec md5sum {} + | sort | md5sum)
+          node scripts/split-skill.mjs > /dev/null
+          AFTER=$(find skills -name '*.md' -exec md5sum {} + | sort | md5sum)
+          if [ "$BEFORE" != "$AFTER" ]; then
+            echo "split-skill.mjs is not idempotent — re-running it changed files"
+            git --no-pager diff --stat
+            exit 1
+          fi
+
       - name: Scripts are syntactically valid
         run: |
           for f in $(find . -name '*.mjs' -not -path './node_modules/*'); do

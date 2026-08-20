@@ -90,7 +90,6 @@ printf(
 
 Dates need the same treatment: `wp_date( get_option( 'date_format' ), $timestamp )` respects both the locale and the site timezone. `date()` and `date_i18n()` do not (the latter is legacy).
 
-
 ## The three sources a naive extractor misses
 
 Scanning PHP for `__()` and friends finds most strings and misses three sets that are all user-visible. Validated by diffing a hand-rolled extractor against `wp i18n make-pot` on a real theme and plugin — the gap was 22 strings on the theme and 14 on the plugin before these were added:

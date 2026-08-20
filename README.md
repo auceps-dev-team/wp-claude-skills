@@ -6,7 +6,15 @@ Two zero-dependency Node scripts do the mechanical work: a security scanner and 
 
 ## Why these skills exist
 
-Every claim in them is checkable against real code. They were written against a corpus of six commercial themes and nine plugins — roughly 4,700 first-party PHP files — rather than against documentation.
+Every claim in them names the package and version it was measured against, and
+the command that produced it. They were written against commercial WordPress
+packages — themes and plugins totalling several thousand first-party PHP files —
+rather than against documentation.
+
+Those packages are licensed products and are not redistributable, so they are
+not in this repository. [CONTRIBUTING.md](CONTRIBUTING.md#corpus) lists exactly
+what was measured in each pass, and what that limit means for verifying a
+claim.
 
 The measurements that shaped the security skill, across the theme half of that corpus (~717 files):
 
@@ -100,7 +108,7 @@ Skills trigger automatically from what you ask. You can also invoke one by name:
 
 ## Scripts
 
-Both are plain Node (18+) with no dependencies.
+Four, all plain Node (18+) with no dependencies.
 
 ### Security scanner
 
@@ -121,6 +129,27 @@ node skills/wp-project-analyze/scripts/wp-detect.mjs <path> [--format text|json|
 ```
 
 Reports kind, architecture generation, header metadata, naming convention (functions, classes **and** constants — OOP themes prefix classes, not functions), options system, page builders, build chain with entry points, i18n state, and every registration.
+
+### POT extractor
+
+```bash
+node skills/wp-i18n-rtl/scripts/make-pot.mjs <src> <out.pot> --domain=slug
+```
+
+Reads the same call signatures core does, plus the two sources a naive
+extractor misses: `theme.json` labels and the stylesheet or plugin header.
+Validated to parity against `wp i18n make-pot`.
+
+### Release pipeline example
+
+```bash
+node skills/wp-release/scripts/build-example.mjs
+```
+
+A worked build: pre-flight gates (syntax, security scan, version consistency,
+translations compiled, theme.json asset references resolve), then a staged ZIP
+with a single top-level directory. Adapt the package list; set `PHP_BIN` and
+`WP_SCAN` if your paths differ.
 
 ## Requirements
 

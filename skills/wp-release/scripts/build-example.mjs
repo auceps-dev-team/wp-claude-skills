@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * build.mjs — package the BELIONE theme, child theme and plugin.
+ * build.mjs — package a theme, its child theme and its companion plugin.
  *
  * Most failed deliveries are packaging mistakes rather than code quality: a
  * development file that shipped, a stale generated asset, or a ZIP whose root
@@ -17,13 +17,16 @@ import { execFileSync } from 'node:child_process';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, 'dist');
-const PHP = 'C:/php85/php.exe';
-const SCAN = 'C:/Users/HP/Downloads/wp-claude-skills/skills/wp-security-audit/scripts/wp-scan.mjs';
+// Configurable, because a hard-coded interpreter path makes this run on
+// exactly one machine. Set PHP_BIN / WP_SCAN when yours differ.
+const PHP = process.env.PHP_BIN || 'php';
+const SCAN = process.env.WP_SCAN
+	|| path.resolve( ROOT, '../wp-security-audit/scripts/wp-scan.mjs' );
 
 const PACKAGES = [
-  { slug: 'belione', label: 'Theme' },
-  { slug: 'belione-child', label: 'Child theme' },
-  { slug: 'belione-core', label: 'Plugin' },
+  { slug: 'mytheme', label: 'Theme' },
+  { slug: 'mytheme-child', label: 'Child theme' },
+  { slug: 'mytheme-core', label: 'Plugin' },
 ];
 
 // Anything matching these never ships. What is delivered is what can be
@@ -227,7 +230,7 @@ function writeZip(files, outPath, rootName) {
 
 // -------------------------------------------------------------------- run
 
-console.log('BELIONE — packaging\n');
+console.log('packaging\n');
 
 const summary = [];
 

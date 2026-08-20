@@ -130,21 +130,6 @@ Verify by opening a post in the editor next to the published page. If they diffe
 
 ## Reference files
 
-| File | Covers |
-|---|---|
-| [`references/brand-assets.md`](references/brand-assets.md) | Auditing a supplied logo, generating web variants including the inverse, wiring it into a theme, and the self-hosted font decision |
-
-## Reference files
-
-The depth lives alongside this file. Read the one that matches the task rather than all of them:
-
-| File | Covers |
-|---|---|
-| [`references/brand-assets.md`](references/brand-assets.md) | Auditing a supplied logo, generating web variants including the inverse, wiring it into a theme, and the self-hosted font decision |
-| [`references/auditing.md`](references/auditing.md) | Finding hard-coded colours, off-scale font sizes and magic spacing in a theme you inherited |
-
-## Reference files
-
 The depth lives alongside this file. Read the one that matches the task rather than all of them:
 
 | File | Covers |
