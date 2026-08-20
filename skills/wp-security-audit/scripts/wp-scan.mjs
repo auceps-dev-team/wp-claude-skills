@@ -146,12 +146,40 @@ function balanced(src, from, open = '(', close = ')') {
   return src.slice(start + 1);
 }
 
+/**
+ * Body of a named function or method, brace-balanced.
+ *
+ * The opening brace is found by first skipping the parameter list, because a
+ * default value or a type hint can contain characters that a naive search for
+ * the next `{` mistakes for the body. Getting this wrong returns some inner
+ * block instead of the function, and every guard check run against it then
+ * reports a correctly guarded handler as unguarded — a false positive on
+ * exactly the code people write most carefully.
+ */
 function functionBody(src, name) {
   if (!name) return null;
+
   const re = new RegExp(`function\\s+${name.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}\\s*\\(`);
   const m = re.exec(src);
   if (!m) return null;
-  return balanced(src, m.index + m[0].length - 1 + src.slice(m.index).indexOf('{'), '{', '}');
+
+  // Walk past the balanced parameter list.
+  const parenStart = m.index + m[0].length - 1;
+  let depth = 0;
+  let i = parenStart;
+  for (; i < src.length; i += 1) {
+    if (src[i] === '(') depth += 1;
+    else if (src[i] === ')') {
+      depth -= 1;
+      if (depth === 0) { i += 1; break; }
+    }
+  }
+
+  // Then to the first brace after it, skipping a return type declaration.
+  const brace = src.indexOf('{', i);
+  if (brace === -1) return null;
+
+  return balanced(src, brace, '{', '}');
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +214,16 @@ function ignoredLines(raw) {
 }
 
 function ruleAjax(file, src, out) {
-  const re = /add_action\(\s*['"]wp_ajax_(nopriv_)?([\w-]+)['"]\s*,\s*(['"][\w\\]+['"]|array\s*\(\s*\$this\s*,\s*['"]\w+['"]\s*,?\s*\))/gs;
+  // The action name may be a literal, or built by concatenation:
+  //   add_action( 'wp_ajax_' . self::ACTION, array( $this, 'handle' ) )
+  //   add_action( "wp_ajax_{$slug}", 'cb' )
+  //
+  // Matching only the literal form leaves a whole registration style invisible.
+  // An unguarded handler registered by concatenation produced zero findings
+  // while the byte-identical handler with a literal name produced two, which is
+  // the worst kind of tool failure: silent, and on the code most likely to be
+  // written by someone building an installer or a settings screen.
+  const re = /add_action\(\s*(?:['"]wp_ajax_(nopriv_)?([\w-]*)['"]\s*(\.\s*[^,]+)?|["']wp_ajax_(nopriv_)?\{?\$[^"']*["'])\s*,\s*(['"][\w\\]+['"]|array\s*\(\s*\$this\s*,\s*['"]\w+['"]\s*,?\s*\)|\[\s*\$this\s*,\s*['"]\w+['"]\s*\])/gs;
 
   // Collect registrations first. An action registered both with and without
   // nopriv is a single public endpoint: reporting it twice, and demanding a
@@ -194,9 +231,13 @@ function ruleAjax(file, src, out) {
   const actions = new Map();
   let m;
   while ((m = re.exec(src)) !== null) {
-    const nopriv = Boolean(m[1]);
-    const action = m[2];
-    const names = m[3].match(/['"]([\w\\]+)['"]/g) || [];
+    const nopriv = Boolean(m[1] || m[4]);
+    // A concatenated or interpolated name cannot be resolved statically. Report
+    // it under the visible prefix rather than dropping the registration.
+    const action = m[3]
+      ? `${m[2]}… (nom construit)`
+      : ( m[2] || '… (nom interpolé)' );
+    const names = m[5].match(/['"]([\w\\]+)['"]/g) || [];
     const cb = names.length ? names[names.length - 1].replace(/['"]/g, '') : null;
     const prev = actions.get(action);
     if (prev) {
