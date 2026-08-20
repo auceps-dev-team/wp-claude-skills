@@ -111,4 +111,60 @@ $wpdb->query( $wpdb->prepare(
 
 - Warn before overwriting, and never let the importer run twice silently on a live site.
 
+## The bespoke alternative: content defined in code
+
+Everything above assumes the marketplace shape — an XML dump plus a widget file
+and a customizer `.dat`, shipped for a theme sold to strangers. For a theme
+built for **one client**, that machinery is the wrong tool: the XML is opaque,
+it cannot be reviewed in a diff, it carries attachment IDs and absolute URLs
+from whatever machine produced it, and re-running it duplicates everything.
+
+A companion plugin can define the same content as PHP instead. Three properties
+are what make it safe to put behind a button a client will press:
+
+| Property | What it means | How it is achieved |
+|---|---|---|
+| Idempotent | Pressing twice creates nothing the second time | Key every item by slug; check `post_status => 'any'` so trashed items still count |
+| Additive | Never edits what it did not create | Fill a page only when `post_content` is empty |
+| Reversible | The undo is safe to offer | Stamp a marker meta on every created post; removal queries by that marker and calls `wp_trash_post()`, never `wp_delete_post()` |
+
+The marker is the load-bearing part. Without one, the only way to undo an
+import is to guess from titles, which is why so many shipped importers offer a
+"reset" that drops tables instead — the destructive path is *easier* to write
+than the precise one. One importer in the audited corpus resets by dropping
+every table behind a nonce and an `is_admin()` check, then promotes the caller
+to administrator. A marker turns undo into a scoped, recoverable query:
+
+```php
+$ids = get_posts( array(
+    'post_type'   => array( 'my_cpt', 'post' ),
+    'post_status' => 'any',
+    'numberposts' => -1,
+    'fields'      => 'ids',
+    'meta_key'    => '_mytheme_demo',
+    'meta_value'  => '1',
+) );
+
+foreach ( $ids as $id ) {
+    wp_trash_post( $id );   // trash, not delete: the client can still get it back
+}
+```
+
+Two ordering traps, both found by running the thing rather than reading it:
+
+- **Dependencies before consumers.** If a page embeds a form's shortcode, the
+  form must be created *before* the page content is built. Reversed, the page
+  silently gets the "plugin not installed" fallback even when the plugin is
+  active — and nothing errors.
+- **"Never touch a written page" needs exactly one exception.** Once the page
+  has fallback content, the additive rule prevents a re-run from ever fixing
+  it. Emit a machine-readable marker inside the fallback (`<!--slug-placeholder-->`)
+  and let the re-run swap that one block. Match the marker, never the sentence:
+  wording and translations change, and a sentence match can hit text the client
+  wrote.
+
+Content defined in code also survives review. The strings go through the same
+`__()` calls as the rest of the plugin, so the demo content appears in the POT
+and can be translated — which an XML dump cannot be.
+
 Operationally: demo import is where most support load comes from. It fails on low `max_execution_time`, low memory, and hosts that block outbound HTTP. Batch the import, check `wp_remote_get()` results for `WP_Error`, and give a real error message instead of a blank screen.
