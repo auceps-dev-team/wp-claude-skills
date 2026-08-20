@@ -90,6 +90,30 @@ printf(
 
 Dates need the same treatment: `wp_date( get_option( 'date_format' ), $timestamp )` respects both the locale and the site timezone. `date()` and `date_i18n()` do not (the latter is legacy).
 
+
+## The three sources a naive extractor misses
+
+Scanning PHP for `__()` and friends finds most strings and misses three sets that are all user-visible. Validated by diffing a hand-rolled extractor against `wp i18n make-pot` on a real theme and plugin — the gap was 22 strings on the theme and 14 on the plugin before these were added:
+
+| Source | Fields | Where the client sees them |
+|---|---|---|
+| `theme.json`, `styles/*.json` | `name` on palette, gradients, duotone, fontSizes, fontFamilies, spacingSizes; `title` on customTemplates, templateParts, style variations | The block editor's colour, typography and spacing pickers |
+| `style.css` / plugin main file | Theme Name, Plugin Name, Description, Author, Theme URI, Plugin URI | The Themes and Plugins screens |
+| `block.json` | `title`, `description`, `keywords`, `styles[].label`, `variations[].*` | The block inserter and its search |
+
+None of them is a PHP call, so none appears in a grep for gettext functions. A plugin that ships blocks and skips `block.json` has an inserter that stays English on every localised site, and nobody notices until a client asks why.
+
+Core keeps the authoritative field lists in `theme-i18n.json` and `block-i18n.json`.
+
+```bash
+wp i18n make-pot . languages/slug.pot --domain=slug
+
+# Without WP-CLI:
+node skills/wp-i18n-rtl/scripts/make-pot.mjs . languages/slug.pot --domain=slug
+```
+
+The bundled script reads all three sources and produces the same string set as WP-CLI. It also reports two things WP-CLI does not: how many calls used a **non-literal** text or domain argument (invisible to every extractor, core's included), and which **other text domains** appear in the source — the fastest way to catch strings quietly filed under the wrong domain.
+
 ## Generating the POT
 
 ```bash
