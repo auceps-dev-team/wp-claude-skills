@@ -158,3 +158,41 @@ jobs:
 ```
 
 `wp-scan.mjs` exits 1 on findings, so it gates the build. A `.distignore` file keeps the exclusion list in one place rather than duplicated between the zip command and CI.
+
+## Building the ZIP on Windows
+
+`zip` does not exist on Windows, and the two obvious substitutes both produce
+archives WordPress rejects — silently, because the file opens fine in Explorer
+and only the installer complains about a missing top-level folder.
+
+| Method | Result |
+|---|---|
+| `zip -r` | not installed |
+| `Compress-Archive` | writes `\` separators in older PowerShell |
+| `[System.IO.Compression.ZipFile]::CreateFromDirectory` | **also writes `\`** under PowerShell 5.1 / .NET Framework |
+| PHP `ZipArchive` with explicit entry names | correct |
+
+The ZIP spec requires forward slashes in entry names. Build the entry list
+yourself rather than trusting a directory-walking helper:
+
+```php
+$zip = new ZipArchive();
+$zip->open( $archive, ZipArchive::CREATE | ZipArchive::OVERWRITE );
+foreach ( $entries as $e ) {
+    // name is always slug/relative/path/with/forward/slashes
+    $zip->addFile( $e['disk'], $e['name'] );
+}
+$zip->close();
+```
+
+Then verify, because this failure is invisible until an install fails:
+
+```bash
+unzip -Z1 mytheme.zip | grep -c '\'          # must be 0
+unzip -Z1 mytheme.zip | cut -d/ -f1 | sort -u   # must print exactly one name
+```
+
+One more Windows detail: deleting the build directory itself can fail with
+`EPERM` immediately after writing archives into it, because the handle is not
+released instantly. Empty the directory's contents instead of removing the
+directory.
