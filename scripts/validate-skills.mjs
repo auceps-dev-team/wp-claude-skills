@@ -44,6 +44,35 @@ function parseFrontmatter(src) {
   return { fields, body: src.slice(m[0].length) };
 }
 
+/**
+ * Count real `## ` headings, ignoring any inside a fenced code block.
+ *
+ * Skills legitimately contain markdown samples whose example output includes
+ * `## ` lines — wp-project-analyze ships a whole ARCHITECTURE.md template that
+ * way. Counting those as sections reported it at ten headings and produced a
+ * standing "consider splitting" warning for a skill that really has five.
+ * split-skill.mjs already tracks fences for exactly this reason; the validator
+ * did not, so the two tools disagreed about the same file.
+ */
+function countSections(body) {
+  let fence = null;
+  let count = 0;
+
+  for (const line of body.split(String.fromCharCode(10))) {
+    const f = /^\s*(```+|~~~+)/.exec(line);
+
+    if (f) {
+      if (fence && line.trim().startsWith(fence)) fence = null;
+      else if (!fence) fence = f[1];
+      continue;
+    }
+
+    if (!fence && /^## /.test(line)) count += 1;
+  }
+
+  return count;
+}
+
 function validateSkill(name) {
   const dir = path.join(SKILLS, name);
   const file = path.join(dir, 'SKILL.md');
@@ -90,7 +119,7 @@ function validateSkill(name) {
   // --- size and progressive disclosure -----------------------------------
   const refDir = path.join(dir, 'references');
   const refs = fs.existsSync(refDir) ? fs.readdirSync(refDir).filter((f) => f.endsWith('.md')) : [];
-  const sections = (fm.body.match(/^## /gm) || []).length;
+  const sections = countSections(fm.body);
 
   if (bytes > LIMITS.skillBytes) {
     add('error', name, 'skill-too-large',

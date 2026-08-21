@@ -179,6 +179,8 @@ Anything not verifiable now, and how long to keep the rollback point.
 
 ## Reference files
 
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
 | File | Covers |
 |---|---|
 | [`references/pipeline.md`](references/pipeline.md) | Automated deploy with rsync, zero-downtime symlink switching, schema migrations |

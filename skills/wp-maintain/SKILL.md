@@ -133,6 +133,8 @@ The line that earns the fee is the verified restore. Everything else is visible 
 
 ## Reference files
 
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
 | File | Covers |
 |---|---|
 | [`references/long-running-jobs.md`](references/long-running-jobs.md) | How backup, restore and scan tools survive PHP timeouts — the resumable-job architecture, measured across three professional plugins |

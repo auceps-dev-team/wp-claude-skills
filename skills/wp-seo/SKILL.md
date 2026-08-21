@@ -169,6 +169,8 @@ Severity here means *ranking or indexing impact*, not tidiness. A missing meta d
 
 ## Reference files
 
+The depth lives alongside this file. Read the one that matches the task rather than all of them:
+
 | File | Covers |
 |---|---|
 | [`references/plugin-conflicts.md`](references/plugin-conflicts.md) | Yoast / Rank Math / SEOPress: what each takes over, how to extend rather than duplicate, migration between them |
