@@ -269,6 +269,10 @@
     "imagery.md": {
       "title": "Text over imagery",
       "covers": "Veils over photographs, gradient direction, the color-mix fallback, decorative alt, image sizes, and placeholder photography"
+    },
+    "fidelity.md": {
+      "title": "Building to a supplied design",
+      "covers": "Working from client mockups: the drift catalogue, extracting exact tokens, self-hosting the named fonts, casing and scale, animation rules, and a pre-review checklist"
     }
   },
   "wp-i18n-rtl": {

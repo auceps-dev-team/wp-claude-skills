@@ -191,3 +191,4 @@ The depth lives alongside this file. Read the one that matches the task rather t
 | [`references/auditing.md`](references/auditing.md) | Finding hard-coded colours, off-scale font sizes and magic spacing in a theme you inherited |
 | [`references/scales.md`](references/scales.md) | Fluid typography with clamp, line height and measure, loading fonts, the spacing scale |
 | [`references/imagery.md`](references/imagery.md) | Veils over photographs, gradient direction, the color-mix fallback, decorative alt, image sizes, and placeholder photography |
+| [`references/fidelity.md`](references/fidelity.md) | Working from client mockups: the drift catalogue, extracting exact tokens, self-hosting the named fonts, casing and scale, animation rules, and a pre-review checklist |
