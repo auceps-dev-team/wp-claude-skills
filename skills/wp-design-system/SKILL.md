@@ -39,6 +39,56 @@ add_action( 'enqueue_block_assets', fn() => wp_add_inline_style( 'mytheme', myth
 
 `enqueue_block_assets` fires in **both** contexts, which is exactly what editor parity requires.
 
+## A component's colour is not its own
+
+Two bugs from one bespoke build, both of which shipped looking fine in review
+and rendered *invisible* on the page. Neither is a typo; both come from a
+component asserting a colour it had no business asserting.
+
+**A figure painted itself navy.** A stat block set
+`color: var(--wp--preset--color--navy)` on its number. Placed on a white
+section that is correct, and it is what the reviewer saw. Dropped into the
+page's navy band it became navy on navy: the yellow caption still showed, the
+number did not. The block had *no* missing style — it had one too many.
+
+The rule that prevents it: **a component that can sit on more than one ground
+inherits its foreground.** `color: inherit` — or nothing at all — and let the
+band own the pairing. Assert a colour only where the component also owns the
+background, so the pair is decided in one place.
+
+```css
+/* The band decides the pairing; the figure inside just follows it. */
+.stat__value { color: inherit; }
+.band--navy  { background: var(--wp--preset--color--navy);
+               color: var(--wp--preset--color--base); }
+```
+
+**A modifier lost to its own base class.** `.button--primary` set the signature
+background; `.button` set navy. Both are one class, so specificity is tied and
+load order decides — and load order was not what the author assumed:
+
+| Hook | When it fires |
+|---|---|
+| `enqueue_block_assets` | **before** `wp_enqueue_scripts` on the front end |
+| `wp_enqueue_scripts` | after |
+
+Core registers `wp_common_block_scripts_and_styles()` on `wp_enqueue_scripts`
+during load, and it fires `enqueue_block_assets` from inside. A theme adding its
+own callback on the same hook at the same priority is therefore queued *later*.
+So the block stylesheet — the file most often chosen for editor parity — loses
+every tie against the main stylesheet.
+
+The fix is not to reorder, which makes the rule depend on a hook's internals.
+Break the tie in the selector:
+
+```css
+.button.button--primary { background: var(--wp--preset--color--signature); }
+```
+
+Both bugs share a tell: **an element that is present in the DOM, correct in the
+markup, and absent on screen.** When something renders but cannot be seen, check
+the ground before you check the rule.
+
 ## Colour
 
 Name tokens by **role**, not appearance. `--color-primary` survives a rebrand; `--color-blue` becomes a lie the first time the brand changes.

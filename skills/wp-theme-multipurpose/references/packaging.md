@@ -163,6 +163,40 @@ Two ordering traps, both found by running the thing rather than reading it:
   wording and translations change, and a sentence match can hit text the client
   wrote.
 
+### Importing the words is not importing the design
+
+An import can place every heading, paragraph and case study exactly as the
+mockup specifies and still be rejected on sight — because a design is also its
+*rhythm*, and rhythm lives in the wrappers, not the text.
+
+A first import produced correct content that read as one flat white column. The
+mockups alternate white, light grey and navy full-bleed bands, with centred
+section titles over a fixed accent rule. None of that is expressible in a
+paragraph: it needs group blocks in the markup, and selectors keyed to them.
+
+So when generating content from a design, generate the containers too:
+
+```php
+// A band, not just a heading — the section's ground travels with its content.
+private static function surface_band( $inner ) {
+    return '<!-- wp:group {"align":"full","backgroundColor":"surface",…} -->'
+        . '<div class="wp-block-group alignfull has-surface-background-color has-background">'
+        . $inner
+        . '</div><!-- /wp:group -->';
+}
+```
+
+Two things to settle before writing any of it:
+
+- **Which side owns the section title treatment.** Centring every `h2` and
+  giving it an accent rule is right for a landing page and wrong for an article,
+  where `h2` is a reading subhead. Scope it (`.page .entry-content > h2`) rather
+  than styling the element globally.
+- **What the front-page template already renders.** If `front-page.php` draws
+  the hero and a taxonomy grid itself, the imported page content must start
+  *after* them. Repeating them in the markup prints each one twice, and the
+  duplication is only visible on the published page.
+
 Content defined in code also survives review. The strings go through the same
 `__()` calls as the rest of the plugin, so the demo content appears in the POT
 and can be translated — which an XML dump cannot be.

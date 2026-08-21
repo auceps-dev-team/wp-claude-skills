@@ -66,7 +66,17 @@ WordPress walks from most specific to least, taking the first file that exists. 
 
 Two traps worth naming:
 
-- `front-page.php` wins over **both** the static page template and `home.php`. A theme with `front-page.php` ignores the user's Reading settings, which surprises everyone. Only ship it if the front page is genuinely special.
+- `front-page.php` wins over **both** the static page template and `home.php`. A theme with `front-page.php` ignores the user's Reading settings, which surprises everyone. Only ship it if the front page is genuinely special — and if you do, handle the case where Reading is still on *latest posts*, because the main query is then the **blog loop, not a page**. A `front-page.php` that assumes a page and calls `the_content()` on that loop prints every post's full body end to end, with no titles and no links. That is what a fresh install shows until the front page is assigned, so it is the first thing a client sees:
+
+  ```php
+  if ( ! is_page() ) {
+      // Reading is on "latest posts": render the post list, not page content.
+      while ( have_posts() ) : the_post();
+          get_template_part( 'template-parts/content/content', get_post_type() );
+      endwhile;
+      return;
+  }
+  ```
 - `home.php` is the *blog posts index*, not the homepage. The naming is historical.
 
 Debug with `template_include`:
