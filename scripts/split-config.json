@@ -253,7 +253,7 @@
     },
     "auditing.md": {
       "title": "Auditing an existing design system",
-      "covers": "Finding hard-coded colours, off-scale font sizes and magic spacing in a theme you inherited",
+      "covers": "Auditing a theme you inherited for hard-coded colours and orphaned tokens, and auditing the rendered page across seven scored dimensions with a P0/P1/P2 punch list",
       "sections": [
         "## Auditing an existing theme"
       ]

@@ -1,5 +1,16 @@
 # Auditing an existing design system
 
+Two audits, and confusing them is how a build passes review on paper and fails
+it on screen. The first reads the code and asks whether a system exists. The
+second looks at the page and asks whether it is any good.
+
+## Contents
+
+- [Auditing an existing theme](#auditing-an-existing-theme)
+- [Auditing the rendered page](#auditing-the-rendered-page)
+- [The seven dimensions](#the-seven-dimensions)
+- [Report format](#report-format)
+
 ## Auditing an existing theme
 
 ```bash
@@ -14,3 +25,89 @@ rg -n "(margin|padding)[^:]*:\s*[0-9]+px" --glob '*.{css,scss}' | head -30
 ```
 
 A large count on the first command is the clearest signal that the design system exists only on paper.
+
+Two WordPress-specific additions worth running in the same pass:
+
+```bash
+# Preset colours referenced but never defined — the token was renamed and the
+# stylesheet was not. These resolve to nothing, which reads as black or as the
+# inherited colour, and no tool reports it.
+node -e '
+const fs=require("fs");
+const t=JSON.parse(fs.readFileSync("theme.json","utf8"));
+const known=new Set(t.settings.color.palette.map(c=>c.slug));
+const css=fs.readFileSync("assets/css/main.css","utf8");
+const used=new Set([...css.matchAll(/--wp--preset--color--([a-z-]+)/g)].map(m=>m[1]));
+console.log([...used].filter(s=>!known.has(s)));'
+
+# add_theme_support() calls that theme.json has already superseded
+rg -n "add_theme_support\(\s*'(editor-color-palette|editor-font-sizes|align-wide|custom-line-height)'" --glob '*.php'
+```
+
+## Auditing the rendered page
+
+The structure below is adapted from the `audit-live-site` prompt in
+[awesome-claude-design](https://github.com/rohitg00/awesome-claude-design), whose
+governing rule is the one that makes an audit worth reading:
+
+> Don't recommend what you can't verify. Cite evidence.
+
+In practice that means every finding carries a selector, a measured ratio, or a
+screenshot coordinate. "The spacing feels cramped" is not a finding; "`.post-card`
+gap is 16px where every other grid on the site uses 40px" is.
+
+Take the screenshots first, at a fixed width, and audit from those rather than
+from memory of the page.
+
+## The seven dimensions
+
+Score each 0–10. The value is not the number — it is that scoring forces you to
+look at every dimension instead of the one that happened to annoy you.
+
+| Dimension | What to look at |
+|---|---|
+| **Hierarchy** | Type scale, visual weight, the path the eye takes down the page |
+| **Spacing** | Rhythm, breathing room, alignment against a grid |
+| **Colour** | Palette coherence, contrast, whether each colour has one role |
+| **Accessibility** | WCAG AA text contrast, visible focus, target sizes |
+| **Slop patterns** | Generic type, purple gradients, uniform card grids, faux-glass, generic rounded buttons |
+| **Motion** | Purposeful or decorative, and whether reduced-motion is honoured |
+| **Copy** | Microcopy tone, whether the CTA says anything, error-state voice |
+
+The slop row is the one most likely to be skipped and the one that most often
+explains a client's "it doesn't look like us". Its WordPress dialect:
+
+- The theme's fallback stack rendering because the named font never loaded.
+- Every section a three-column grid, because that is what the columns block
+  offers first.
+- Core block defaults left untouched — the default button radius and the default
+  gap are recognisable on sight.
+- An accent rule on every card, so it means nothing anywhere.
+
+## Report format
+
+Three parts, in this order:
+
+**1. Summary table** — dimension, score, one-line verdict. Someone should be
+able to read only this and know where the build stands.
+
+**2. Findings, tiered P0 / P1 / P2** — each with the selector, the evidence, and
+a concrete fix as a CSS snippet or a text revision. Tier on consequence, not on
+how wrong it feels: a contrast failure is P0 because it excludes people; a
+mismatched border radius is P2 however much it grates.
+
+**3. Punch list** — the same findings reordered by impact ÷ effort, in the order
+someone should actually work through them. This is the part a client acts on.
+
+A worked example of the tiering, from a real review round:
+
+| Tier | Finding | Why that tier |
+|---|---|---|
+| P0 | Named font never loaded; whole site on `system-ui` | Every page, and it is what "doesn't look like the design" means |
+| P0 | Stat value set to navy, rendering navy-on-navy | Content invisible, not merely wrong |
+| P1 | Section titles double their specified size, sentence case | Repeated on every page, but legible |
+| P2 | Card gap 16px against a 40px rhythm | Visible only when compared side by side |
+
+The discipline that matters: **audit against the design, not against taste.**
+Where mockups exist they are the reference, and a finding that says "I would
+have done this differently" belongs in a conversation, not in the report.
