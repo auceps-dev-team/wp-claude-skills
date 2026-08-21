@@ -89,6 +89,9 @@ Both bugs share a tell: **an element that is present in the DOM, correct in the
 markup, and absent on screen.** When something renders but cannot be seen, check
 the ground before you check the rule.
 
+A photograph is the hardest ground of all, because it has no single colour to
+pair against — see [`references/imagery.md`](references/imagery.md).
+
 ## Colour
 
 Name tokens by **role**, not appearance. `--color-primary` survives a rebrand; `--color-blue` becomes a lie the first time the brand changes.
@@ -187,3 +190,4 @@ The depth lives alongside this file. Read the one that matches the task rather t
 | [`references/brand-assets.md`](references/brand-assets.md) | Auditing a supplied logo, generating web variants including the inverse, wiring it into a theme, and the self-hosted font decision |
 | [`references/auditing.md`](references/auditing.md) | Finding hard-coded colours, off-scale font sizes and magic spacing in a theme you inherited |
 | [`references/scales.md`](references/scales.md) | Fluid typography with clamp, line height and measure, loading fonts, the spacing scale |
+| [`references/imagery.md`](references/imagery.md) | Veils over photographs, gradient direction, the color-mix fallback, decorative alt, image sizes, and placeholder photography |

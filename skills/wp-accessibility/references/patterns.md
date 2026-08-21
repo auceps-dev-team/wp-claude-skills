@@ -32,6 +32,7 @@ Alt text rules:
 
 - **Informative image** → describe the information, not the picture. "Bar chart: sales doubled in Q4", not "chart".
 - **Decorative image** → `alt=""` (empty, but present). An omitted `alt` makes screen readers read the filename.
+  In WordPress the omission is worse than that: `wp_get_attachment_image()` with no `alt` argument falls back to the attachment's *stored* alt text, so a decorative background inherits whatever description the media library holds and gets announced ahead of the heading it sits behind. Pass `'alt' => ''` explicitly.
 - **Image inside a link** → the alt describes the *destination*, since it is the link text.
 - **Never** start with "image of" or "picture of" — the role is already announced.
 

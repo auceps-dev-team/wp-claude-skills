@@ -265,6 +265,10 @@
         "## Typography",
         "## Spacing"
       ]
+    },
+    "imagery.md": {
+      "title": "Text over imagery",
+      "covers": "Veils over photographs, gradient direction, the color-mix fallback, decorative alt, image sizes, and placeholder photography"
     }
   },
   "wp-i18n-rtl": {
