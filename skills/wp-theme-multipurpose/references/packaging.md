@@ -163,6 +163,66 @@ Two ordering traps, both found by running the thing rather than reading it:
   wording and translations change, and a sentence match can hit text the client
   wrote.
 
+### The skip branch is where later fixes go to die
+
+The three properties above make an importer safe to re-run. They also create a
+trap that took three separate bugs in one build to see.
+
+Every one of those properties is implemented as an early exit:
+
+```php
+if ( self::exists( $slug, $type ) ) { $skipped++; continue; }   // idempotent
+if ( '' !== trim( $page->post_content ) ) { $skipped++; continue; } // additive
+if ( get_option( 'my_form_id' ) ) { return 'exists'; }          // create-once
+```
+
+So **any improvement shipped after the first import is invisible to every site
+that already ran it.** The improvements land in the branch that creates things,
+and existing sites only ever reach the branch that skips them. Three instances,
+all found by looking at the rendered site rather than the code:
+
+| Fix shipped | Why it never appeared |
+|---|---|
+| Featured images added to demo content | `attach()` was called only on creation; existing posts stayed unillustrated through any number of re-runs |
+| A new section rhythm in the page layouts | `fill_pages()` skipped anything non-empty, so the first import's layout was also the last |
+| `<label>` wrapping on the contact form's fields | `import_contact_form()` returned `'exists'` before reading the form, so seven fields stayed unlabelled |
+
+The symptom is identical every time and is easy to misread as "the fix did not
+work": the code is correct, the tests pass, a fresh install is right, and the
+site in front of the client is unchanged.
+
+**Give each skip branch a repair path**, guarded on evidence that the item is
+still the one the import produced:
+
+```php
+$found = self::exists( $slug, $type );
+
+if ( $found ) {
+    // Repair rather than walk away — but only what we still recognise.
+    DemoMedia::attach( $found, $spec['image'], $spec['title'] );
+    $skipped++;
+    continue;
+}
+```
+
+The guard is what keeps this from becoming an overwrite. Three that work:
+
+- **A fingerprint.** Store `md5()` of what you wrote; rewrite only while the
+  stored content still hashes to it. Hash what the database *returned*, not what
+  you sent — the platform normalises markup on save, and a hash taken before the
+  write never matches.
+- **A structural tell.** The contact form was repaired only when its markup
+  contained no `<label>` at all, which is the signature of the version that
+  needed fixing. A form the client had edited necessarily has one, so it is
+  left alone.
+- **Absence.** Setting a featured image only when `has_post_thumbnail()` is
+  false can never destroy a client's choice.
+
+And ship one explicit, clearly-labelled action for the cases no guard can cover
+— sites imported before fingerprints existed. Let the operator decide, say
+plainly that it overwrites, and make sure the previous content lands in a
+revision so the decision is reversible.
+
 ### Importing the words is not importing the design
 
 An import can place every heading, paragraph and case study exactly as the

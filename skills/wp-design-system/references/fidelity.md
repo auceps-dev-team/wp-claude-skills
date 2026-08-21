@@ -15,6 +15,7 @@ Measured across three review rounds on one bespoke build, all three rejected.
 - [Self-host the specified fonts](#self-host-the-specified-fonts)
 - [Casing and scale are design, not styling](#casing-and-scale-are-design-not-styling)
 - [Animation that serves reading](#animation-that-serves-reading)
+- [A rule that lives only in a media query has no default](#a-rule-that-lives-only-in-a-media-query-has-no-default)
 - [A fidelity checklist worth running](#a-fidelity-checklist-worth-running)
 
 ## The drift catalogue
@@ -150,6 +151,57 @@ html:not(.js) [data-reveal] { opacity: 1; transform: none; }
 
 Unobserve after the first reveal. A section that re-animates when the visitor
 scrolls back up reads as a glitch, not an effect.
+
+## A rule that lives only in a media query has no default
+
+Introducing a variant that should appear at one breakpoint only is where
+responsive work quietly breaks, and the failure is always the same shape.
+
+Moving the header's call-to-action buttons into the navigation panel for small
+screens, both halves of the change were written inside one query:
+
+```css
+@media (max-width: 860px) {
+	.site-header__actions { display: none; }   /* cacher la barre */
+	.site-nav__actions    { display: flex; }   /* montrer le panneau */
+}
+```
+
+Correct below 860px. Above it, the first rule stops applying and the bar's
+buttons come back — as intended — but the second rule stops applying too, and
+`.site-nav__actions` falls back to *its own default*, which for a `div` is
+visible. The desktop header rendered both sets side by side: two identical
+calls to action and two WhatsApp buttons on one line. The client saw it before
+I did.
+
+The rule that prevents it: **write the default state outside the query first,
+then let the query override it.**
+
+```css
+/* Le doublon n'existe que pour le mobile. */
+.site-nav__actions { display: none; }
+
+@media (max-width: 860px) {
+	.site-header__inner > .site-header__actions { display: none; }
+	.site-nav__actions { display: flex; }
+}
+```
+
+The generalisation is worth holding onto: **a media query is an override, not a
+scope.** Anything you only style inside one is unstyled everywhere else, and
+"unstyled" is rarely "invisible" — it is whatever the element's initial value
+happens to be.
+
+Two related habits from the same fix:
+
+- **Duplicate in markup, do not relocate with script.** The panel's copy of the
+  actions is rendered server-side rather than moved by JavaScript on resize.
+  Moving a node reorders the tab sequence and disappears entirely when the
+  script fails.
+- **Measure what you offset against.** The panel opened at a hard-coded
+  `4.5rem`, which covered the bar on a taller header and left a gap on a
+  shorter one. A custom property set from the header's measured height, kept
+  current by a `ResizeObserver`, is a few lines and stops being wrong.
 
 ## A fidelity checklist worth running
 

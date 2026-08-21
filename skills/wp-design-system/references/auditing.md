@@ -9,6 +9,7 @@ second looks at the page and asks whether it is any good.
 - [Auditing an existing theme](#auditing-an-existing-theme)
 - [Auditing the rendered page](#auditing-the-rendered-page)
 - [The seven dimensions](#the-seven-dimensions)
+- [A hedged finding is not a weak finding, it is not a finding](#a-hedged-finding-is-not-a-weak-finding-it-is-not-a-finding)
 - [Report format](#report-format)
 
 ## Auditing an existing theme
@@ -83,6 +84,62 @@ explains a client's "it doesn't look like us". Its WordPress dialect:
 - Core block defaults left untouched — the default button radius and the default
   gap are recognisable on sight.
 - An accent rule on every card, so it means nothing anywhere.
+
+## A hedged finding is not a weak finding, it is not a finding
+
+Two audits of the same site were compared side by side: one written from the
+page's fetched text, one from the rendered DOM. They agreed on structure —
+heading hierarchy, skip link, concrete copy — and disagreed on eleven points.
+
+Every disagreement fell the same way. **Six of the text-only audit's claims were
+false, and all six were the ones it had hedged** with "probablement",
+"inféré", "non vérifiable depuis le fetch":
+
+| Hedged claim | What the DOM said |
+|---|---|
+| No logo in the header | Present, and visible in the client's own screenshot |
+| Fonts falling back to system-ui | Both named faces active and self-hosted, zero Google Fonts links |
+| Four-column grid, too dense for mobile | Columns measured 2, 2 and 3 — no four anywhere |
+| `color-mix()` with no `@supports` fallback | The fallback was there |
+| Accent used as a text colour everywhere | Zero elements used it as text |
+
+The five unhedged claims were all true.
+
+That is the rule the "cite evidence" principle above exists to enforce, stated
+from the other side: an inference offered as a finding is worse than silence,
+because it costs the reader a verification round and can send them to change
+code that was already right. The accent claim is the sharpest example — it
+concluded the exact opposite of the truth, and the reason it was false is that
+the defect had already been fixed.
+
+**If you cannot open the page, do not score it.** Audit the code instead and say
+that is what you did — the theme audit above is a real deliverable on its own.
+An audit that mixes measured findings with inferred ones teaches the reader to
+distrust all of them, including the ones that were right.
+
+One measurement that pays for itself here: a selector, a ratio, or a count
+takes one console expression and converts a paragraph of hedging into a fact.
+
+```js
+// Le jaune sert-il vraiment de couleur de texte quelque part ?
+//
+// getComputedStyle rend « rgb(240, 168, 28) », le jeton vaut « #F0A81C » :
+// les comparer tels quels donne toujours zéro, donc toujours « conforme ».
+// On normalise les deux en triplets avant de comparer.
+const hex = getComputedStyle(document.documentElement)
+  .getPropertyValue('--wp--preset--color--signature').trim();
+
+const toRgb = c => c.startsWith('#')
+  ? [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)).join()
+  : (c.match(/d+/g) || []).slice(0, 3).join();
+
+const accent = toRgb(hex);
+
+[...document.querySelectorAll('*')]
+  .filter(el => toRgb(getComputedStyle(el).color) === accent
+             && el.textContent.trim())
+  .length;
+```
 
 ## Report format
 
