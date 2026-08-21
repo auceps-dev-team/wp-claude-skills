@@ -121,7 +121,6 @@ wp i18n make-pot . languages/mytheme.pot --domain=mytheme --exclude=node_modules
 
 For a theme, add `--headers='{"Report-Msgid-Bugs-To":"https://example.com/support"}'`. Regenerate on every release; a stale POT means new strings are untranslatable.
 
-
 Where WP-CLI is unavailable, this suite ships a stand-in that reads the same call signatures core does:
 
 ```bash

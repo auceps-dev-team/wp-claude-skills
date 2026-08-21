@@ -1,0 +1,16 @@
+# Fins de ligne déterministes, en LF partout — y compris dans la copie de
+# travail sous Windows.
+#
+# Sans ce fichier et avec core.autocrlf=true, la copie locale est en CRLF
+# tandis que le dépôt et la CI sont en LF. split-skill.mjs normalise les lignes
+# vides avec /\n{3,}/, motif qui ne correspond à rien sur du CRLF : le contrôle
+# d idempotence passait donc en local et échouait en CI, six fois de suite,
+# sans qu aucun des deux environnements ne soit en tort.
+* text=auto eol=lf
+
+# Binaires : jamais de conversion.
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.mo binary
+*.zip binary
