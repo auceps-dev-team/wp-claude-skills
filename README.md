@@ -1,8 +1,8 @@
 # wp-claude-skills
 
-A WordPress development skill suite for [Claude Code](https://claude.com/claude-code), covering the whole project lifecycle: creation, deployment, modification, monitoring and improvement. Nineteen skills across themes (classic, hybrid and block), plugins and blocks, WooCommerce, security, performance, accessibility, SEO, design systems, i18n, deployment, maintenance and release packaging.
+A WordPress development skill suite for [Claude Code](https://claude.com/claude-code), covering the whole project lifecycle: creation, deployment, modification, monitoring and improvement. Twenty skills across the end-to-end build process (showcase sites, WooCommerce stores, web apps), themes (classic, hybrid and block), plugins and blocks, WooCommerce, security, performance, accessibility, SEO, design systems, i18n, deployment, maintenance and release packaging.
 
-Two zero-dependency Node scripts do the mechanical work: a security scanner and an architecture detector.
+Zero-dependency Node scripts do the mechanical work: a security scanner, an architecture detector, and the build tooling — mockup server, page assembler, font self-hoster, remote WordPress caller.
 
 ## Why these skills exist
 
@@ -57,6 +57,12 @@ Skills trigger automatically from what you ask. You can also invoke one by name:
 
 ## The skills
 
+### Process
+
+| Skill | Covers |
+|---|---|
+| **wp-site-build** | The whole build, for any kind of site: brief with a visual reference, local HTML mockup with a register gate, page set, conversion to an editable block theme, local staging written only by replayable tools, a client-approved deployment and five measured acceptance gates. Branches for showcase sites, WooCommerce stores (block templates, product filters with colour swatches, block checkout, consent, legal pages, newsletter, payments) and web apps. Start here; it routes to the skills below. |
+
 ### Foundation
 
 | Skill | Covers |
@@ -108,7 +114,18 @@ Skills trigger automatically from what you ask. You can also invoke one by name:
 
 ## Scripts
 
-Four, all plain Node (18+) with no dependencies.
+All plain Node (18+) with no dependencies.
+
+### Site build
+
+```bash
+ROOT=/abs/path/_mockup/site node skills/wp-site-build/scripts/serve.mjs          # mockup server, next free port if busy
+node skills/wp-site-build/scripts/assemble.mjs _mockup                            # every page from one head/header/footer
+node skills/wp-site-build/scripts/fetch-fonts.mjs "<Google Fonts css2 URL>" <out> # self-hosted fonts, no visitor request to Google
+node skills/wp-site-build/scripts/novamira.mjs <ability> '<json>'                 # call a Novamira ability over HTTP
+```
+
+The skill also ships a minimal block theme (`assets/theme-skeleton/`) whose blocks validate in the editor as written.
 
 ### Security scanner
 

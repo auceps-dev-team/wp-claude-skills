@@ -1,7 +1,7 @@
 {
   "name": "wp-claude-skills",
   "version": "0.1.0",
-  "description": "A complete WordPress development skill suite for Claude Code: classic and block themes, multipurpose theme architecture, plugins, security auditing, performance, design systems, i18n and release packaging.",
+  "description": "A complete WordPress development skill suite for Claude Code: the end-to-end site build (showcase, WooCommerce store, web app) from a visual reference to measured acceptance, classic and block themes, multipurpose theme architecture, plugins, security auditing, performance, design systems, i18n and release packaging.",
   "author": {
     "name": "Auceps Dev Team"
   },
@@ -14,7 +14,10 @@
     "gutenberg",
     "woocommerce",
     "security",
-    "php"
+    "php",
+    "block-theme",
+    "site-build",
+    "mockup"
   ],
   "license": "MIT"
 }
