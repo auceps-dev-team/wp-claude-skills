@@ -65,6 +65,39 @@
         "Uses get_stylesheet_directory_uri (not get_template_directory_uri) for child theme assets",
         "Inspects the actual theme files rather than answering generically"
       ]
+    },
+    {
+      "id": 4,
+      "name": "site-build-showcase-brief",
+      "prompt": "Détail du site :\nAtelier Nanga\nMenuiserie sur mesure à Douala\nCuisines, dressings et portes en bois massif, fabriqués dans notre atelier depuis 2009.\ncontact@ateliernanga.cm · +237 6 99 00 11 22\n\nPages du site :\nAccueil\nRéalisations\nL'atelier\nContact\n\nRéférence :\nImage en pièce jointe (une page d'accueil sobre : fond blanc froid, une seule sans-serif, aucun accent coloré, titres centrés, grandes photos bord à bord).",
+      "expected_output": "A phase 1 plan that reads the register off the reference and adds nothing to it, then a local HTML mockup of the home page — no WordPress write, and an explicit request for mockup approval.",
+      "files": [],
+      "assertions": [
+        "Opens with a survey of the seven register invariants read on the reference (type class, colour system, background temperature, page cut, geometry, alignment, density)",
+        "Keeps a single sans-serif family and adds no accent colour, or asks the client before adding one",
+        "Lists what it adds beyond the reference, and the list is short or empty",
+        "Builds the home page in local HTML/CSS, not in WordPress",
+        "Does not invent reviews, client counts or awards; uses visible placeholders for facts the brief does not give",
+        "Asks for approval of the mockup before any conversion or deployment",
+        "Fills the register gate table (reference / mockup / verdict) before showing the mockup"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "site-build-store-filters-payments",
+      "prompt": "Le site e-commerce de mon client est en local (WooCommerce, thème bloc maison). Il veut un filtre par couleur et par prix sur les pages catégorie, une newsletter, et payer par Paystack et par virement. Ses produits n'ont aucun attribut, juste des noms comme « Parure Almina Rose » ou « Drap imprimé – WA0029 ». Fais tout ça proprement.",
+      "expected_output": "A plan and implementation using the Product Filters block, a colour attribute filled from names and photos with a reviewable source column, MailPoet rather than a contact form for the newsletter, and payments configured without inventing keys or bank details.",
+      "files": [],
+      "assertions": [
+        "Notices that colour filtering needs a product attribute and that none exists yet",
+        "Assigns colours from product names and photos and records the source of each, for the client to review, rather than guessing silently",
+        "Uses the WooCommerce Product Filters block (product-filter-attribute, product-filter-price) and obtains its markup from the editor or validates it there",
+        "Writes the colour attribute ID into the filter explicitly or computes it, rather than relying on an omitted default",
+        "Populates or checks the product attributes lookup table before trusting filter results",
+        "Uses a list manager with double opt-in for the newsletter, not a contact form that emails each sign-up",
+        "Does not enter or invent Paystack keys or bank account details; leaves them for the client",
+        "Measures filter result counts against a direct query rather than asserting they work"
+      ]
     }
   ]
 }

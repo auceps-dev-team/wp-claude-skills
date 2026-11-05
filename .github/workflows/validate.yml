@@ -41,6 +41,27 @@ jobs:
         run: |
           node skills/wp-security-audit/scripts/wp-scan.mjs --help
           node skills/wp-project-analyze/scripts/wp-detect.mjs || true
+          for s in serve assemble fetch-fonts novamira; do
+            node skills/wp-site-build/scripts/$s.mjs --help
+          done
+
+      - name: Assembler builds its fixture, and refuses a broken menu
+        run: |
+          F=/tmp/mockup
+          mkdir -p $F/source/parts $F/source/pages
+          echo '<title>{{title}}</title><body class="{{class}}">{{banner}}{{header}}<main>{{content}}</main>{{footer}}</body>' > $F/source/head.html
+          echo '<ul><li data-menu="Home"><a href="index.html">Home</a></li></ul>' > $F/source/parts/header.html
+          echo '<footer>f</footer>' > $F/source/parts/footer.html
+          printf '<!-- file: index.html | title: Home | class: home | menu: Home -->\n<h1>Hi</h1>\n' > $F/source/pages/home.html
+          node skills/wp-site-build/scripts/assemble.mjs $F
+          grep -q 'class="is-current"' $F/site/index.html
+          grep -q 'aria-current="page"' $F/site/index.html
+          printf '<!-- file: shop.html | title: Shop | menu: Shop -->\n<p>x</p>\n' > $F/source/pages/shop.html
+          # Exit 1 is the expected outcome: "Shop" is not in the header.
+          if node skills/wp-site-build/scripts/assemble.mjs $F; then
+            echo "assemble.mjs accepted a menu entry that does not exist"
+            exit 1
+          fi
 
       - name: Scanner fires on its fixture
         run: |

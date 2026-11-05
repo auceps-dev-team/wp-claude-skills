@@ -1,0 +1,67 @@
+/*
+Theme Name: My Theme
+Theme URI: https://example.com
+Author: —
+Description: Custom block theme. Replace the tokens below and paste the mockup's CSS.
+Version: 1.0.0
+Requires at least: 6.6
+Requires PHP: 8.0
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: my-theme
+Tags: block-theme, full-site-editing, one-column
+*/
+
+/* Bump Version above after EVERY change to this file: it drives the ?ver= of
+   the stylesheet, and browsers and page caches key on it. */
+
+:root {
+  /* Replace with the phase 1 palette — sampled from the reference. */
+  --ink: #0A1124;
+  --accent: #1F4BFF;
+  --grey: #F5F6F9;
+  --graphite: #616A7D;
+  --line: #E5E7EE;
+  --white: #fff;
+}
+
+* { box-sizing: border-box }
+body { margin: 0; background: var(--white); color: var(--ink); font-size: 17px; line-height: 1.62; -webkit-font-smoothing: antialiased; position: relative }
+/* height:auto is required: otherwise the height attribute of image blocks beats aspect-ratio. */
+img { max-width: 100%; height: auto; display: block }
+h1, h2, h3 { margin: 0; font-weight: 700; text-wrap: balance; hyphens: none }
+p { margin: 0 }
+
+/* No horizontal scroll at 390 px. clip, not hidden: hidden creates a scroll
+   container and breaks position: sticky columns. */
+.wp-site-blocks { overflow-x: clip }
+
+/* Gutenberg adds margin-block-start between siblings. Neutralise it first in
+   theme.json (blockGap: "0px") and, as a safety net, HERE AT ZERO
+   SPECIFICITY — never as .wp-block-group > *, which overrides every margin your
+   components declare (measured: 14 margins zeroed, 307 px of rhythm lost). */
+:where(.wp-block-group) > :where(*), :where(.wp-block-buttons) { margin-block: 0 }
+figure.wp-block-image { margin: 0 }
+
+.wrap { max-width: 1200px; margin-inline: auto; padding-inline: 24px }
+
+/* The header floats above the first section, so heroes reserve its height in
+   padding-top. Flex comes from CSS: every group in the parts uses layout
+   "default" (see block-conversion.md). */
+.site-header { position: fixed; inset: 0 0 auto 0; z-index: 30; padding-block: 18px }
+.site-header-row { display: flex; align-items: center; justify-content: space-between; gap: 24px }
+.menu .wp-block-navigation-item__content { text-decoration: none }
+/* core/navigation's mobile panel opens white on white without this (the
+   block's CSS is printed AFTER this sheet, so it needs specificity + !important): */
+.wp-block-navigation.menu .wp-block-navigation__responsive-container.is-menu-open {
+  background-color: var(--ink) !important; color: var(--white) !important }
+.site-footer-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-block: 40px }
+.not-found, .archive { padding-block: 160px 120px }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px }
+
+/* Variants shown by toggling a class, never by injecting content. */
+.is-hidden { display: none }
+.is-hidden.is-active { display: block }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important } }

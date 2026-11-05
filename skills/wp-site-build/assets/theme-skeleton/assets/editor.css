@@ -1,0 +1,27 @@
+/* ==========================================================================
+   Block-editor-only fixes, loaded by add_editor_style(). Never affects the
+   front end: only the Gutenberg canvas.
+
+   Why this file exists: Gutenberg forces "position: relative" on every block
+   to anchor its toolbars. Any layer the mockup takes out of the flow (hero
+   photo in the background, floating marker) falls back in, steals space, and
+   columns collapse down to a button rendered as vertical text. Acceptance
+   gate 5 checks this file.
+   ========================================================================== */
+
+/* 1 · Restore out-of-flow layers — adapt the classes to the project. */
+/*
+.hero-photo,
+.hero-marker { position: absolute !important; }
+*/
+
+/* 2 · No fixed header in the canvas: shrink the space heroes reserve for it,
+      or a whole screen height is lost to scrolling. */
+/*
+.hero { min-height: 62vh !important; padding-block: 72px 52px !important; }
+*/
+
+/* 3 · The site background, otherwise the canvas stays white around blocks. */
+/*
+.editor-styles-wrapper { background: var(--ink); }
+*/

@@ -179,7 +179,7 @@ function validateSkill(name) {
   // --- cross-references resolve ------------------------------------------
   const known = fs.readdirSync(SKILLS).filter((d) => fs.statSync(path.join(SKILLS, d)).isDirectory());
   const seen = new Set();
-  for (const m of fm.body.matchAll(/`(wp-(?:theme|plugin|blocks|standards|security|performance|accessibility|design|i18n|release|project|child|woocommerce|deploy|maintain|seo)[a-z-]*)`/g)) {
+  for (const m of fm.body.matchAll(/`(wp-(?:theme|plugin|blocks|standards|security|performance|accessibility|design|i18n|release|project|child|woocommerce|deploy|maintain|seo|site)[a-z-]*)`/g)) {
     if (!known.includes(m[1]) && !seen.has(m[1])) {
       seen.add(m[1]);
       add('error', name, 'broken-cross-reference', `references unknown skill \`${m[1]}\``);

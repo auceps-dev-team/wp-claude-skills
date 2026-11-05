@@ -110,6 +110,7 @@ it rather than to some running total:
 | 2 | The plugins those themes bundle: Gyan Elements, Insight Core, Envato Market, Slider Revolution, WPBakery | ~1,100 |
 | 3 | Professionally maintained plugins: Wordfence 9.0.0, Duplicator Pro 4.6.9, WP Staging Pro 6.9.2, Ultimate Store Kit Pro 2.7.2 — first-party code, vendored dependencies excluded | 2,869 |
 | 4 | Block plugins and SEO plugins: Essential Blocks Pro, GutenKit Pro, Advanced Gutenberg Pro, Elementor Pro, Yoast Premium, AIOSEO Pro | ~1,900 |
+| 5 | A store built with `wp-site-build`: custom block theme on WordPress 7.1.4, WooCommerce 11.2.2 with the **block** cart and checkout, Complianz 7.5.7, WP Consent API 2.1.0, MailPoet 5.45.1, Paystack 5.8.6, Contact Form 7 6.1.7, Flamingo 2.6.4 — runtime behaviour measured on a local stack (November 2026), plus the plugin files named in `store.md` | one site, 98 products |
 
 **These packages are not in the repository and cannot be.** They are paid
 commercial products under licences that forbid redistribution. That is a real
@@ -129,9 +130,17 @@ What that means in practice for the rule *every claim must be checkable*:
 Where a claim cannot meet any of those three, it should be softened to what it
 is: an observation, not a measurement.
 
+Pass 5 differs from the others: it is a site, not a package, and what it
+measured is runtime behaviour — what a page rendered, what a filter returned,
+which cookies a response set — on a given date and stack. The site belongs to a
+client and is not in the repository either; `wp-site-build/references/store.md`
+gives the versions, the date and the method for each figure, and names the
+plugin file wherever a statement was read rather than observed.
+
 Known gaps, where the skills still rest on knowledge rather than measurement:
-a genuine block/FSE theme (the three sold as "Gutenberg themes" that were
-measured turned out to be classic themes styling core blocks), a WooCommerce
-store using the block checkout rather than the shortcode one, and RTL beyond
-generated stylesheets. Contributions that close these are the most valuable
-ones available.
+a genuine block/FSE theme beyond the single build of pass 5 (the three sold as
+"Gutenberg themes" in pass 1 turned out to be classic themes styling core
+blocks), a second WooCommerce store on the block checkout to confirm pass 5,
+a web app built with `wp-site-build` (its `web-app.md` says it is unmeasured),
+and RTL beyond generated stylesheets. Contributions that close these are the
+most valuable ones available.
