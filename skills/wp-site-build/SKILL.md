@@ -1,6 +1,6 @@
 ---
 name: wp-site-build
-description: Build or redesign a whole WordPress site from a visual reference — brief, local HTML mockup, conversion to an editable block theme, local staging with replayable tools, a client-approved deployment and five measured acceptance gates — for showcase sites, WooCommerce stores (block cart and checkout, filters, consent, payments, newsletter, legal pages) and web apps. Use this whenever the user wants to create, rebuild or replace a WordPress site or theme, leave a page builder such as Elementor or Divi, or sends a site brief with a reference image or URL.
+description: Build or redesign a whole WordPress site from a visual reference — brief, local HTML mockup, conversion to an editable block theme, local staging with replayable tools, a client-approved deployment and five measured acceptance gates — for showcase sites, WooCommerce stores (block cart and checkout, filters, consent, payments, newsletter, legal pages, SEO) and web apps. Use this whenever the user wants to create, rebuild or replace a WordPress site or theme, leave a page builder such as Elementor or Divi, or sends a site brief with a reference image or URL.
 ---
 
 # Building a WordPress site, end to end
@@ -44,13 +44,15 @@ Do not start a phase until the previous gate is passed.
 | 1 · Brief | Client | Reference survey, palette and type taken *from* the reference, "what I add" list |
 | 2 · Mockup | Iterative | Home page in HTML, register gate passed, **client approval** |
 | 3 · Page set | Agent | Every page assembled from one header/footer source |
-| 4 · Block theme + staging | Agent | Theme built; local WordPress set up by replayable tools; gates 1–5 pass on staging |
+| 4 · Block theme + staging | Agent | Theme built; local WordPress set up by replayable tools, SEO last; gates 1–5 pass on staging |
 | 5 · Deployment | Agent, **after client approval of the plan** | Backup outside the web root, then the same tools run on production |
 | 6 · Acceptance | Agent | Gates 1–5 pass on production, or back to phase 4 |
 
 Phases 0–3 and the deployment plan: `references/phases.md`. HTML-to-blocks conversion: `references/block-conversion.md`. The five gates with their code: `references/acceptance.md`.
 
 **Staging is local, and every change is a tool.** Content and configuration are written by idempotent PHP scripts (`tools/install-site.php`, `tools/configure-*.php`) run with the PHP CLI against a local copy, never typed into wp-admin. The same scripts replay on production at deployment, and replaying one twice changes nothing — that is checked, not assumed.
+
+**SEO is the last tool of phase 4**, once pages and catalogue are final: titles and descriptions for every page, product and category, sitemap, sharing image, `noindex` on cart and account pages. It runs as a dry run first, and a person reads every generated line before it is written: `references/seo.md`.
 
 ## Choose the branch
 
@@ -89,7 +91,8 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `references/block-conversion.md` | During phase 4, every time |
 | `references/acceptance.md` | Phases 4 and 6 — the five gates and measurement hygiene |
 | `references/store.md` | Any WooCommerce site |
+| `references/seo.md` | At the end of phase 4, and after deployment for Search Console |
 | `references/web-app.md` | Membership, booking, dashboards, anything with logged-in users doing work |
 | `references/pitfalls.md` | As soon as a symptom surprises you |
 
-Related skills: `wp-theme-block-fse` for theme.json and templates, `wp-design-system` for tokens, `wp-woocommerce` for hooks and HPOS, `wp-deploy` for migrations, `wp-plugin-architecture` and `wp-blocks-gutenberg` for application code, `wp-accessibility` and `wp-performance` before acceptance.
+Related skills: `wp-theme-block-fse` for theme.json and templates, `wp-design-system` for tokens, `wp-woocommerce` for hooks and HPOS, `wp-seo` for canonical, sitemap and schema ownership, `wp-deploy` for migrations, `wp-plugin-architecture` and `wp-blocks-gutenberg` for application code, `wp-accessibility` and `wp-performance` before acceptance.

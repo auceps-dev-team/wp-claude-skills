@@ -110,7 +110,7 @@ it rather than to some running total:
 | 2 | The plugins those themes bundle: Gyan Elements, Insight Core, Envato Market, Slider Revolution, WPBakery | ~1,100 |
 | 3 | Professionally maintained plugins: Wordfence 9.0.0, Duplicator Pro 4.6.9, WP Staging Pro 6.9.2, Ultimate Store Kit Pro 2.7.2 — first-party code, vendored dependencies excluded | 2,869 |
 | 4 | Block plugins and SEO plugins: Essential Blocks Pro, GutenKit Pro, Advanced Gutenberg Pro, Elementor Pro, Yoast Premium, AIOSEO Pro | ~1,900 |
-| 5 | A store built with `wp-site-build`: custom block theme on WordPress 7.1.4, WooCommerce 11.2.2 with the **block** cart and checkout, Complianz 7.5.7, WP Consent API 2.1.0, MailPoet 5.45.1, Paystack 5.8.6, Contact Form 7 6.1.7, Flamingo 2.6.4 — runtime behaviour measured on a local stack (November 2026), plus the plugin files named in `store.md` | one site, 98 products |
+| 5 | A store built with `wp-site-build`: custom block theme on WordPress 7.1.4, WooCommerce 11.2.2 with the **block** cart and checkout, Complianz 7.5.7, WP Consent API 2.1.0, MailPoet 5.45.1, Paystack 5.8.6, Contact Form 7 6.1.7, Flamingo 2.6.4, All in One SEO 5.0.5 — runtime behaviour measured on a local stack (November 2026), plus the plugin files named in `store.md` | one site, 98 products |
 
 **These packages are not in the repository and cannot be.** They are paid
 commercial products under licences that forbid redistribution. That is a real

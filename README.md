@@ -61,7 +61,7 @@ Skills trigger automatically from what you ask. You can also invoke one by name:
 
 | Skill | Covers |
 |---|---|
-| **wp-site-build** | The whole build, for any kind of site: brief with a visual reference, local HTML mockup with a register gate, page set, conversion to an editable block theme, local staging written only by replayable tools, a client-approved deployment and five measured acceptance gates. Branches for showcase sites, WooCommerce stores (block templates, product filters with colour swatches, block checkout, consent, legal pages, newsletter, payments) and web apps. Start here; it routes to the skills below. |
+| **wp-site-build** | The whole build, for any kind of site: brief with a visual reference, local HTML mockup with a register gate, page set, conversion to an editable block theme, local staging written only by replayable tools, a client-approved deployment and five measured acceptance gates. Branches for showcase sites, WooCommerce stores (block templates, product filters with colour swatches, block checkout, consent, legal pages, newsletter, payments, SEO) and web apps. Start here; it routes to the skills below. |
 
 ### Foundation
 

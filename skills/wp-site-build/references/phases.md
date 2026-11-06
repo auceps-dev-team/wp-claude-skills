@@ -211,7 +211,9 @@ Three habits make a tool safe to replay:
 
 Page content is built with small helpers that emit exact block markup (`group()`, `heading()`, `para()`, `image()` with the media `id`, `buttons()`, `details()`), so the markup is right by construction and gate 2 has nothing to find. Splicing a generated section into an existing file with a script is fine — but check the source exists first: a `file_get_contents()` on a missing path returns `false`, concatenates as an empty string, and silently deletes the section being replaced.
 
-Typical tool set: `import-catalogue.php` (stores), `install-site.php` (media, forms, pages, front page, theme switch), then one `configure-<topic>.php` per concern — consent, terms, filters, newsletter, payments — each owning its own options.
+Typical tool set: `import-catalogue.php` (stores), `install-site.php` (media, forms, pages, front page, theme switch), then one `configure-<topic>.php` per concern — consent, terms, filters, newsletter, payments — each owning its own options, and `configure-seo.php` last, once every page and product it describes exists (`seo.md`).
+
+For a redesign, compare the imported catalogue with the live one field by field before the SEO step: name, price, images, categories, description, short description. On the store build that comparison found 69 products whose descriptions the import had dropped, and two real products it had skipped (one with no category, one with no name), among 37 theme demo products correctly left out.
 
 ## Phase 5 — Deployment
 
@@ -281,6 +283,14 @@ Steps 1–6 replace the theme of a production site, overwrite colliding pages, i
 
 An agreement given for another site, or before this table existed, does not count. A partial refusal applies line by line.
 
+### Whole-site migration instead
+
+When the client confirms nothing on the live site must be kept — no orders, accounts or subscribers — the staging copy can replace production whole, with a migration plugin such as Duplicator, instead of steps 1–4. It is faster and it is destructive: the live database is gone, so take the same plugin's package of the live site first and keep it off the server. Three things to settle on staging before packaging:
+
+- **Exclude the mockup and tools folders.** `tools/*.php` bootstrap WordPress and act as an administrator; uploaded inside the web root, anyone could run them by URL. Exclude `_mockup/`, `.claude/` and any backup of `.htaccess` from the package.
+- **Permalinks.** A local stack often runs on `/index.php/%postname%/`; switch staging to `/%postname%/` before packaging, regenerate content links by replaying the tools, and flush rewrite rules in a *fresh* request — flushed in the same request as the switch, the product-category rules kept the old prefix and every category page returned 404.
+- **What the copy cannot bring.** Image sizes the local PHP could not generate, mail delivery, payment keys: list them as post-migration tasks.
+
 ### 1 · Package and upload the theme
 
 ```bash
@@ -324,4 +334,4 @@ After **every** change to `style.css` or `theme.json`:
 
 Delete transfer files (`theme.zip`, `content.json`) — they sit in public `uploads/`. Keep the backup until acceptance; delete it then if it had to fall back inside the web root.
 
-Then run the five gates on production (`acceptance.md`).
+Then run the five gates on production (`acceptance.md`), and finish the SEO step where only production can: Search Console verification, sitemap submission, `robots.txt` at the domain root (`seo.md`).

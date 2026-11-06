@@ -98,6 +98,23 @@
         "Does not enter or invent Paystack keys or bank account details; leaves them for the client",
         "Measures filter result counts against a direct query rather than asserting they work"
       ]
+    },
+    {
+      "id": 6,
+      "name": "site-build-seo-step",
+      "prompt": "Le site WooCommerce de mon client est prêt en local (thème bloc, 100 produits). Installe All in One SEO et configure toutes les pages et les fiches produits avant la mise en ligne.",
+      "expected_output": "An SEO tool run as a dry run first, then written: titles and descriptions for every page, product and category without invented facts, noindex on utility pages, one sitemap matching the database, and measured checks of the served tags.",
+      "files": [],
+      "assertions": [
+        "Installs the plugin from wordpress.org and does not connect a vendor account or enable usage tracking",
+        "Generates titles and descriptions with a dry run that is read before writing",
+        "Keeps prices, delivery promises and other unconfirmed facts out of meta descriptions",
+        "Flags duplicate descriptions and products whose names are codes or slugs",
+        "Sets noindex on cart, checkout and account pages",
+        "Checks that each page serves exactly one title, description, canonical and robots meta",
+        "Compares the sitemap URL counts with the indexable pages, products and categories in the database",
+        "Leaves Search Console verification and sitemap submission for after deployment"
+      ]
     }
   ]
 }
