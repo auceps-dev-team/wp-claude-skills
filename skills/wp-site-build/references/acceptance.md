@@ -105,6 +105,7 @@ for u in "" "faq/" "product-category/sheets/"; do echo "== /$u"; curl -s -D - -o
 ```
 
   On a page nobody has interacted with, the list should be empty. Anything there must be strictly necessary and declared in the cookie policy (`store.md`, consent).
+- **Search tags**, on the home page and one page, product and category: exactly one `<title>`, meta description, canonical and robots meta; `noindex` on cart, checkout and account pages; one sitemap, whose URL counts equal the database's indexable pages, products and categories. The commands and the measured results are in `seo.md`.
 
 ## Gate 4 · Pixel fidelity
 

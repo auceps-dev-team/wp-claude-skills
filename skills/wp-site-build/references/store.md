@@ -38,6 +38,8 @@ A store has facts a showcase site does not, and none of them can be invented. As
 
 **Thumbnails need GD or Imagick.** On this XAMPP install `extension=gd` was commented out in `php.ini`; `media_handle_sideload()` then imports the original but generates no intermediate size. Check `extension_loaded('gd')` before importing hundreds of images.
 
+**Compare the copy with the source, field by field.** WooCommerce's Store API is public and paginated (`/wp-json/wc/store/v1/products?per_page=100&page=N`), so the live catalogue can be compared without access to its admin. On this build, names, prices, images and categories matched; descriptions and short descriptions were missing on 69 products, because the first import never copied them; and two real products had been skipped — one with no category on the live site, one with no name at all. The nameless one was added as a draft with a placeholder name rather than published blank. Copy descriptions verbatim, but look at the bytes: the old site stored the Windows-1252 apostrophe as U+0092, an invisible control character that rendered "taies d’oreillers" as "taies doreillers" (`bin2hex` showed `c2 92`). Replacing U+0092 with `’` corrected the texts of 39 products.
+
 **WooCommerce re-enables "coming soon" mode.** After activation, `woocommerce_coming_soon` was back to `yes`, and the shop was empty for every visitor while it looked fine to the logged-in admin. Set it to `no` in the install tool and check logged out.
 
 ## Templates
@@ -84,7 +86,8 @@ Measured after the tool ran: 130 rows for 130 colour assignments on 98 products;
 
 - Sort the swatches by `"sortOrder":"menu_order-asc"` and set term meta `order` in palette order (white, beige, brown, grey, black, pink, red, orange, yellow, green, blue, violet, multicolour); the default sorts by count.
 - The chips block hides term names in swatch mode (`.is-style-swatch .wc-block-product-filter-chips__text` is visually hidden). A grid of four with the name under each swatch reads better; un-hide the text with `position: static; clip: auto; clip-path: none; width: auto; height: auto`.
-- The price inputs are capped at `max-width: 60px` by WooCommerce, which truncates "16 000 FCFA"; override with `max-width: none` on `.wc-block-product-filter-price-slider .text input[type=text]`.
+- The price inputs are capped at `max-width: 60px` by WooCommerce, which truncates "16 000 FCFA". Do not fix it with a fixed width: two 112 px inputs in a 180 px column (measured at 1920 px) made the sticky filter column scroll sideways. Give the inputs `width: 100%; max-width: none` and the slider's grid `grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr)`, then check `aside.scrollWidth === aside.clientWidth`.
+- In the product gallery, `object-fit: contain` in a square frame leaves grey bands above and below landscape photos; a client reported it as a broken page. `cover` fills the frame and crops the edges of very elongated photos — say which in the editing guide.
 - Put colour and price **above** a long category list, or they fall below the fold of a sticky column.
 
 ## Cart, checkout and confirmation
