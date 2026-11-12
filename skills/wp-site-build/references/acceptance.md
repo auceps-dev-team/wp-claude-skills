@@ -77,6 +77,8 @@ Read `window.__gate2` a few seconds later. Launching in the background and readi
 
 ## Gate 3 · Rendering, logged out
 
+`scripts/gate3.mjs <full URLs…>` runs everything below except the interactions, page by page in a fresh visitor profile, and reads cookies from the browser's own store (`HttpOnly` included). The snippets show what it measures, for a site where Node cannot drive a Chrome.
+
 - Every image served with HTTP 200 and a non-zero size.
 - Fonts really applied: `getComputedStyle(document.body).fontFamily`, and no request to a font CDN.
 - Interactions working **logged out** — in an admin session, host widgets can cover the mobile screen and the admin bar shifts fixed headers.
@@ -108,6 +110,8 @@ for u in "" "faq/" "product-category/sheets/"; do echo "== /$u"; curl -s -D - -o
 - **Search tags**, on the home page and one page, product and category: exactly one `<title>`, meta description, canonical and robots meta; `noindex` on cart, checkout and account pages; one sitemap, whose URL counts equal the database's indexable pages, products and categories. The commands and the measured results are in `seo.md`.
 
 ## Gate 4 · Pixel fidelity
+
+`scripts/gate4.mjs <mockup-url> <site-url> --sel-file selectors.json` runs the measurement below on both, diffs them, and exits 1 on any difference.
 
 What the eye misses: margins zeroed by an over-broad reset, residual `blockGap`, a textarea at the wrong height. Measure geometry and computed styles of the **same selectors** on the local mockup and on the site, then diff.
 
@@ -146,6 +150,8 @@ const m = s => { const e = doc.querySelector(s); if (!e) return null; const r = 
 ```
 
 Out-of-flow layers must still be `absolute`, the wrapper must span the canvas, no button may be ~100 px wide (vertical text). If it fails, `assets/editor.css` is missing or not registered.
+
+On Elementor the editor is different and so is the check: `scripts/gate5-elementor.mjs` (`elementor.md`, "Gates on Elementor").
 
 ## Replay check for tools
 

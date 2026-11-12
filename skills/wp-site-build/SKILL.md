@@ -1,6 +1,6 @@
 ---
 name: wp-site-build
-description: Build or redesign a whole WordPress site from a visual reference — brief, local HTML mockup, conversion to an editable block theme, local staging with replayable tools, a client-approved deployment and five measured acceptance gates — for showcase sites, WooCommerce stores (block cart and checkout, filters, consent, payments, newsletter, legal pages, SEO) and web apps. Use this whenever the user wants to create, rebuild or replace a WordPress site or theme, leave a page builder such as Elementor or Divi, or sends a site brief with a reference image or URL.
+description: Build or redesign a whole WordPress site from a visual reference — brief, local HTML mockup, conversion to an editable block theme, local staging with replayable tools, a client-approved deployment and five measured acceptance gates — for showcase sites (block theme or Elementor free), WooCommerce stores (block cart and checkout, filters, consent, payments, newsletter, legal pages, SEO) and web apps. Use this whenever the user wants to create, rebuild or replace a WordPress site or theme, build its pages with Elementor, leave a page builder such as Divi, or sends a site brief with a reference image or URL.
 ---
 
 # Building a WordPress site, end to end
@@ -44,7 +44,7 @@ Do not start a phase until the previous gate is passed.
 | 1 · Brief | Client | Reference survey, palette and type taken *from* the reference, "what I add" list |
 | 2 · Mockup | Iterative | Home page in HTML, register gate passed, **client approval** |
 | 3 · Page set | Agent | Every page assembled from one header/footer source |
-| 4 · Block theme + staging | Agent | Theme built; local WordPress set up by replayable tools, SEO last; gates 1–5 pass on staging |
+| 4 · Block theme (or Elementor pages) + staging | Agent | Theme built; local WordPress set up by replayable tools, SEO last; gates 1–5 pass on staging |
 | 5 · Deployment | Agent, **after client approval of the plan** | Backup outside the web root, then the same tools run on production |
 | 6 · Acceptance | Agent | Gates 1–5 pass on production, or back to phase 4 |
 
@@ -61,10 +61,11 @@ The method is the same for every site; what differs is phase 4 onwards.
 | Site | What changes | Read |
 |---|---|---|
 | Showcase | Pages, forms (Contact Form 7 + Flamingo), legal pages | this file and the phases |
+| Showcase on Elementor free | Pages are Elementor data written by a tool, mockup classes on widgets, styles in the theme; header and footer in PHP; rules 4–6 and 9 in widget terms; gates in the Elementor editor | `references/elementor.md` |
 | Store | WooCommerce block templates, catalogue import, product filters, cart/checkout blocks, consent, payments, newsletter, order confirmation | `references/store.md` |
 | Web app | Custom post types, roles, REST, dynamic blocks, account flows — the mockup still drives every public screen | `references/web-app.md` |
 
-`references/store.md` is measured on a real build (WooCommerce 11.2.2, block checkout, block theme). `references/web-app.md` is not: it says so, and routes to the skills that are.
+`references/store.md` is measured on a real build (WooCommerce 11.2.2, block checkout, block theme), and so is `references/elementor.md` (Elementor 4.3.6 free, 26 pages). `references/web-app.md` is not: it says so, and routes to the skills that are.
 
 ## Facts belong to the client
 
@@ -80,6 +81,11 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `scripts/assemble.mjs` | Phase 3 — builds every page from one `<head>`, header and footer source |
 | `scripts/fetch-fonts.mjs` | Phase 4 — self-hosts Google Fonts: no request to Google from visitors, nothing to declare under GDPR |
 | `scripts/novamira.mjs` | Phase 5 — calls a Novamira ability over HTTP without registering an MCP server |
+| `scripts/capture.mjs` | Phases 2–6 — full-page screenshots and in-page measurements through headless Chrome (Node 22+); the module the gates share |
+| `scripts/gate3.mjs` | Gate 3 — overflow, images, font, font CDN, title / description / h1, visitor cookies on every page; full URLs only |
+| `scripts/gate4.mjs` | Gate 4 — same selectors on mockup and site, geometry and computed styles; `--ignore` prints an explained divergence as accepted |
+| `scripts/elementor-data.mjs` | Elementor branch — builders for page data, and `check`: gate 1 offline on the JSON |
+| `scripts/gate5-elementor.mjs` | Elementor branch — gates 2 and 5 in the real editor, with a session WordPress generates locally |
 | `assets/theme-skeleton/` | Phase 4 — minimal block theme: `theme.json` with `blockGap: 0px`, `editor.css`, fonts in the editor |
 
 ## References
@@ -92,6 +98,7 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `references/acceptance.md` | Phases 4 and 6 — the five gates and measurement hygiene |
 | `references/store.md` | Any WooCommerce site |
 | `references/seo.md` | At the end of phase 4, and after deployment for Search Console |
+| `references/elementor.md` | Phase 4 when the pages are built with Elementor free |
 | `references/web-app.md` | Membership, booking, dashboards, anything with logged-in users doing work |
 | `references/pitfalls.md` | As soon as a symptom surprises you |
 
