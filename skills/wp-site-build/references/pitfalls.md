@@ -1,6 +1,6 @@
 # Pitfalls
 
-Failures met on real builds, with the exact symptom, the cause and the fix. The first fourteen come from the showcase builds the method was written on; the rest from the store build recorded in `store.md`.
+Failures met on real builds, with the exact symptom, the cause and the fix. The first fourteen come from the showcase builds the method was written on, the store section from the store build recorded in `store.md`, and the Elementor section from the services build recorded in `elementor.md` (November 2026).
 
 ## Contents
 
@@ -9,6 +9,7 @@ Failures met on real builds, with the exact symptom, the cause and the fix. The 
 - [Workspace and tooling](#workspace-and-tooling)
 - [Caches and testing](#caches-and-testing)
 - [Store build](#store-build)
+- [Elementor build](#elementor-build)
 - [Remote access](#remote-access)
 
 ## Design failures no gate can see
@@ -132,6 +133,52 @@ Static files are instant, WordPress pages take 9–10 s, and REST calls time out
 ### Tracking cookies before consent
 
 `sbjs_*` cookies appear on the first visit despite a consent banner. WooCommerce order attribution only waits for consent through WP Consent API. Install it with the consent manager.
+
+## Elementor build
+
+### Every link points to `?page_id=`
+
+The menus and buttons work, but every URL is `/?page_id=19` instead of `/services/flyers/`. The install tool resolved `@page:` links while permalinks were still plain, and `get_permalink()` returned what was true at that moment. Set the permalink structure and flush first, then install the pages; or simply replay the tool, since it is idempotent.
+
+### Permalinks "flushed" and still 404
+
+Every page except the home page answers 404 from Apache. `.htaccess` holds the `# BEGIN WordPress` markers with nothing between them. From the PHP CLI, `got_mod_rewrite()` is false (there is no `apache_get_modules()`), so `flush_rewrite_rules(true)` writes an empty block — and reports nothing. Add `add_filter('got_rewrite', '__return_true')` before flushing, then check for a real `RewriteRule . ` line. Checking that the markers exist is a false success: they are written either way.
+
+### A widget is 420 px in the mockup and full width on the site
+
+Elementor's `frontend.min.css` sets `max-width: 100%` through `.elementor.elementor .e-con > .elementor-widget`, four classes. A mockup class on the widget loses. Every override of this kind is in the table of `elementor.md`, "The adaptation layer"; the general cure is to measure (gate 4), then match the specificity Elementor uses rather than reaching for `!important`.
+
+### "Access denied" when writing the tagline from the CLI
+
+`update_option('blogdescription', …)` throws `Access denied.` from inside Elementor (measured). Elementor 4.3.6 hooks `update_option_blogname` and `update_option_blogdescription` to copy the value into its kit (`core/kits/manager.php`, read), and that kit save needs a user allowed to edit it; a CLI process has none. Run every tool through a bootstrap that sets the administrator as current user (`wp_set_current_user()`), and check that the kit's `site_description` followed.
+
+### A third-party widget rewrites the form
+
+The quote form's choice cards collapse into a list. Essential Addons Lite styles `.eael-contact-form-7 label { display: block }`, more specific than the mockup's `label.choice`. Prefix every form rule with the widget's own class. Same family as the block theme's navigation: a plugin's CSS printed after yours wins at equal specificity.
+
+### Grey or stale screenshots
+
+Two causes measured on the same build. Lazy images far below the fold stayed grey in full-page captures even after switching `loading` to `eager`: the page has to be scrolled through, which `scripts/capture.mjs` does. And the IDE's embedded browser returned old frames while its pane was hidden, and refused `http://localhost:80` in one setup — so the gates drive their own headless Chrome.
+
+### Every page "renders" empty in a gate run
+
+Gate 3 reports zero images and no title on every page. On Windows Git Bash, root-relative arguments such as `/site/about/` are rewritten to `C:/Program Files/Git/site/about/` before Node sees them. Pass full URLs; `gate3.mjs` refuses anything else. `MSYS_NO_PATHCONV=1` also stops the rewrite, but then breaks `curl -o /dev/null` (exit 23) in the same shell.
+
+### A gate run dies silently
+
+A gate run on 26 pages was killed by `timeout` with no output at all, because the script printed only at the end. The gates now print each page as it is measured; on a slow local stack, run them in the background and read the result once, rather than wrapping them in a short timeout.
+
+### A gate summary nobody can re-check
+
+The build's notes said that gate 4 was at 0 px and that "only `display` diverges". Six days later, the published script replayed on the same pages found a banner background that diverged on three pages. The raw output of the first run had not been kept, so nobody can tell whether that divergence was missed or appeared later. Write each gate's raw output to a dated file next to the summary. A summary is a reading of the output; it does not replace it.
+
+### Two meta descriptions on one page
+
+A check counting `name="description"` found two on the quote page. The second was the form's `<textarea name="description">`. Count `meta[name="description"]`, as `gate3.mjs` does. A plausible failure on a single page deserves a look at the markup before a fix.
+
+### The consent banner is required with no tracking at all
+
+The site sets no cookie, yet Complianz 7.5.7 decided a banner was needed. Its wizard answer `consent_for_anonymous_stats` defaults to `yes`. With no statistics tool, answer `no` in the configuration tool; `site_needs_cookie_warning('eu')` then returns false. If a banner is needed later, check that the banner table is not empty after a CLI configuration: the tool has to create the banner row itself.
 
 ## Remote access
 

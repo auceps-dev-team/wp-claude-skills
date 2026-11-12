@@ -41,7 +41,7 @@ jobs:
         run: |
           node skills/wp-security-audit/scripts/wp-scan.mjs --help
           node skills/wp-project-analyze/scripts/wp-detect.mjs || true
-          for s in serve assemble fetch-fonts novamira; do
+          for s in serve assemble fetch-fonts novamira capture gate3 gate4 gate5-elementor elementor-data; do
             node skills/wp-site-build/scripts/$s.mjs --help
           done
 
@@ -60,6 +60,32 @@ jobs:
           # Exit 1 is the expected outcome: "Shop" is not in the header.
           if node skills/wp-site-build/scripts/assemble.mjs $F; then
             echo "assemble.mjs accepted a menu entry that does not exist"
+            exit 1
+          fi
+
+      - name: Elementor data check passes a valid page, and refuses an html widget
+        run: |
+          D=/tmp/elementor
+          mkdir -p $D
+          # Built with the module's own builders, so the fixture follows the format it checks.
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            import { container, heading, image, button, finalise, resetIds } from './skills/wp-site-build/scripts/elementor-data.mjs';
+            resetIds('t');
+            const ok = finalise([container('hero', [
+              heading('Hello', 'h1', 'hero__title'),
+              image('hero.jpg', 'A photo', 'hero__photo'),
+              container('hero__actions', [button('Ask for a quote', '@page:quote', 'pill')], { row: true }),
+            ], { tag: 'section' })]);
+            fs.writeFileSync('$D/ok.json', JSON.stringify(ok));
+            const bad = structuredClone(ok);
+            bad[0].elements.push({ id: 'zz00001', elType: 'widget', widgetType: 'html', isInner: false, settings: { html: '<div></div>' }, elements: [] });
+            fs.writeFileSync('$D/bad.json', JSON.stringify(bad));
+          "
+          node skills/wp-site-build/scripts/elementor-data.mjs check $D/ok.json
+          # Exit 1 is the expected outcome: an html widget is never allowed.
+          if node skills/wp-site-build/scripts/elementor-data.mjs check $D/bad.json; then
+            echo "elementor-data.mjs accepted an html widget"
             exit 1
           fi
 

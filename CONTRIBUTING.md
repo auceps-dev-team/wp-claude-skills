@@ -101,7 +101,7 @@ If you disagree with any of these, argue it in an issue with an example — the 
 ## Corpus
 
 Skills are validated against real WordPress packages. The corpus has grown in
-three passes, and each figure quoted in a skill refers to the pass that produced
+successive passes, and each figure quoted in a skill refers to the pass that produced
 it rather than to some running total:
 
 | Pass | What was measured | Files |
@@ -111,6 +111,7 @@ it rather than to some running total:
 | 3 | Professionally maintained plugins: Wordfence 9.0.0, Duplicator Pro 4.6.9, WP Staging Pro 6.9.2, Ultimate Store Kit Pro 2.7.2 — first-party code, vendored dependencies excluded | 2,869 |
 | 4 | Block plugins and SEO plugins: Essential Blocks Pro, GutenKit Pro, Advanced Gutenberg Pro, Elementor Pro, Yoast Premium, AIOSEO Pro | ~1,900 |
 | 5 | A store built with `wp-site-build`: custom block theme on WordPress 7.1.4, WooCommerce 11.2.2 with the **block** cart and checkout, Complianz 7.5.7, WP Consent API 2.1.0, MailPoet 5.45.1, Paystack 5.8.6, Contact Form 7 6.1.7, Flamingo 2.6.4, All in One SEO 5.0.5 — runtime behaviour measured on a local stack (November 2026), plus the plugin files named in `store.md` | one site, 98 products |
+| 6 | A services showcase built with `wp-site-build` on the **Elementor branch**: minimal classic theme on WordPress 7.1.4, PHP 8.2.12, MariaDB 10.4.32, Elementor 4.3.6 (free), Essential Addons Lite 6.8.8, Contact Form 7 6.1.7, Flamingo 2.6.4, All in One SEO 5.0.5, Complianz 7.5.7 — pages written as Elementor data by a tool, runtime behaviour and editor behaviour measured on a local stack (November 2026) | one site, 26 pages |
 
 **These packages are not in the repository and cannot be.** They are paid
 commercial products under licences that forbid redistribution. That is a real
@@ -130,17 +131,24 @@ What that means in practice for the rule *every claim must be checkable*:
 Where a claim cannot meet any of those three, it should be softened to what it
 is: an observation, not a measurement.
 
-Pass 5 differs from the others: it is a site, not a package, and what it
-measured is runtime behaviour — what a page rendered, what a filter returned,
-which cookies a response set — on a given date and stack. The site belongs to a
-client and is not in the repository either; `wp-site-build/references/store.md`
-gives the versions, the date and the method for each figure, and names the
-plugin file wherever a statement was read rather than observed.
+Passes 5 and 6 differ from the others: each is a site, not a package, and what
+they measured is runtime behaviour — what a page rendered, what a filter returned,
+which cookies a response set — on a given date and stack. The sites belong to
+clients and are not in the repository either; `wp-site-build/references/store.md`
+and `wp-site-build/references/elementor.md` give the versions, the date and the
+method for each figure, and name the plugin file wherever a statement was read
+rather than observed. The gate scripts of pass 6 (`gate3.mjs`, `gate4.mjs`,
+`gate5-elementor.mjs`, `elementor-data.mjs`) were replayed on that site before
+being published. The replay reproduced the build's figures, and it also found
+two property divergences that the build's own summary had missed. Both were
+fixed and re-measured (`elementor.md`, "Gates on Elementor").
 
 Known gaps, where the skills still rest on knowledge rather than measurement:
 a genuine block/FSE theme beyond the single build of pass 5 (the three sold as
 "Gutenberg themes" in pass 1 turned out to be classic themes styling core
 blocks), a second WooCommerce store on the block checkout to confirm pass 5,
 a web app built with `wp-site-build` (its `web-app.md` says it is unmeasured),
+Elementor Pro and its Theme Builder, a block theme under Elementor (pass 6 used a
+classic theme),
 and RTL beyond generated stylesheets. Contributions that close these are the
 most valuable ones available.
