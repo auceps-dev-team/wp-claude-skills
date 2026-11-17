@@ -14,6 +14,7 @@ Everything below was measured on one build: a print-services showcase site of 26
 - [Header and footer without Pro](#header-and-footer-without-pro)
 - [Interactions and forms](#interactions-and-forms)
 - [Gates on Elementor](#gates-on-elementor)
+- [With a third-party theme's widgets](#with-a-third-party-themes-widgets)
 
 ## The rules, translated
 
@@ -167,3 +168,34 @@ echo wp_json_encode([$c(AUTH_COOKIE, 'auth', ADMIN_COOKIE_PATH), $c(AUTH_COOKIE,
 Write the output to a scratch file, run the gate, and delete the file. The token expires on its own an hour later.
 
 **Pace the editor runs.** On XAMPP without OPcache, one page took 1–2 minutes to become ready in the editor, so run gate 5 on one page per template, not on the whole site. Run the browser gates one at a time, never in parallel: a slowed run times out and reads like a regression.
+
+## With a third-party theme's widgets
+
+Measured on Fana 1.1.33 (Thembay) + Elementor 4.4.0 free, November 2026. Keeping the theme is `third-party-theme.md`; what follows is only what changes in this file.
+
+**Use the theme's widgets for what they do.** A multipurpose theme ships widgets that carry behaviour you would otherwise rebuild — product tabs by category, mini-cart, mega menu, banners with hover effects. They are what the client keeps editing after handover. Add their names to the allowed list of gate 1, and give the generator one small helper per widget rather than hand-written settings at each call site.
+
+**Read the widget's PHP before you write its settings.** Three traps, all found that way and all invisible from the panel:
+
+- an empty description field takes the widget's **default**, which on Fana's banner is a paragraph of lorem ipsum. Write `''` explicitly, and make sure your `clean()` helper does not drop empty strings;
+- the "Link" field became an `onclick` on a `<div>` — not focusable, not a link, invisible to crawlers. Leave the field empty and override the one template so it prints a real `<a>`, stretched over the banner by CSS;
+- Fana's own stylesheet sets `.tbay-element-banner .banner-label span { display: inline-block }`, which also hit a button nested inside and cost it 5 px. Match the parent's selector shape, prefixed with `:root`, or you lose on specificity.
+
+**Gate 5 lies by default when the theme owns the header.** Two corrections, both measured:
+
+- *Scope every query to the page's own document.* The editor preview is "ready" as soon as the theme's header renders, so four different pages each reported "ok, 17 widgets" — the header and footer, none of their content. Query `.elementor-<id> [data-widget_type]`, and treat zero widgets as a failure rather than a pass.
+- *Wait for server-rendered widgets.* A theme's widgets render over AJAX and carry `elementor-loading` while they do. Counting empty widgets before that finishes reported a mini-cart as empty while it was still in flight; report anything still loading after a timeout instead of ignoring it.
+
+Once the gate stopped lying, the mini-cart **was** empty, for a real reason: the theme only prints it when `WC()->cart` exists, and WooCommerce does not load the cart in the editor's AJAX requests. One hook in the child theme fixes it — and it is exactly the kind of defect the client would have met in the editor after handover.
+
+```php
+add_action( 'elementor/ajax/register_actions', function () {
+    if ( function_exists( 'wc_load_cart' ) && did_action( 'woocommerce_init' ) && null === WC()->cart ) wc_load_cart();
+} );
+```
+
+**Gate 4 takes pairs.** The mockup's `.hero__title` is the site's `.js-hero .elementor-heading-title`. Keep the mockup selector as the key so the criterion does not move, and pass `--site-prefix js-` for the common case.
+
+**Native widgets beat markup in a text widget.** Buttons written as `<a class="btn">` inside a Text widget look right and cannot be restyled from the panel. Use the Button widget and set typography, padding, border and both colour states from the generator: the client then edits text, link, icon and colours where they expect to. On this build that was eight buttons, and the icon spacing needed 13 px rather than the mockup's 10 to match its width — measured by gate 4, not guessed.
+
+**Carousels and lightboxes are the limit of a server-side fix.** Slick re-applies `aria-hidden` to its slides during the measurement, after the correction has run. An attribute observer on the page reduces it; it does not win the race. Say so in the report rather than claiming a perfect score.

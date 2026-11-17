@@ -18,6 +18,7 @@ This closes, for one store, the gap `CONTRIBUTING.md` lists: a WooCommerce store
 - [Payments](#payments)
 - [Help pages: about, FAQ, delivery and returns, care](#help-pages-about-faq-delivery-and-returns-care)
 - [The local stack itself](#the-local-stack-itself)
+- [Outside the EU: law, payments, currency](#outside-the-eu-law-payments-currency)
 
 ## What to ask before phase 4
 
@@ -170,3 +171,20 @@ Modelled on the reference's own pages, with the client's positioning as the only
 - **OPcache off makes every page slow.** XAMPP ships `;zend_extension=opcache`. With WooCommerce, MailPoet and Complianz active, every WordPress request took 9–10 s while a static file took 0.12 s; WordPress reached `plugins_loaded` 5.8 s into the request (timed with a temporary must-use plugin, since removed). MailPoet accounted for about half a second of it (9.0–9.4 s without, 9.5–9.8 s with). Enabling OPcache is a change to the developer's machine: propose it, do not make it.
 - **No mail server.** Nothing listens on port 25 on a default XAMPP; every `wp_mail()` fails. That is also what makes local form and checkout tests safe to run.
 - Back up the database (`mysqldump`) before each batch of tools: on this build each dump took seconds for a 2 MB database.
+
+## Outside the EU: law, payments, currency
+
+`store.md` above is measured on a French store. A store elsewhere keeps the method and changes the sources. Measured on an Ivorian store in XOF, November 2026.
+
+**Start from the country's own texts, not from a European template.** The generated terms of a consent plugin follow the GDPR and the EU consumer directives; pasted under an African company's name they promise rights that law does not grant and omit the ones it does. Read the statutes, cite them by article, and say which ones you could not read.
+
+On this build, from Côte d'Ivoire's law 2013-546 on electronic transactions: article 5 lists the identity details every e-commerce operator must keep permanently accessible — name, full address, email, phone, trade register number, share capital, tax number; article 6 requires prices to state whether taxes and delivery are included; article 7 makes the seller liable for the whole order, delivery included; articles 21–22 require the terms to be storable, the steps and languages to be shown before the order, and an electronic acknowledgement after it; article 13 fines a breach of articles 5–11 at one to five years and 1–10 million FCFA. From law 2013-450 on personal data: processing is declared to the authority (ARTCI), a phone number or a transfer abroad needs **prior authorisation**, and article 28 lists what to tell people at collection. Neither text covers a right of withdrawal — that is in the consumer law, which we could not read, so the terms say so instead of inventing a delay.
+
+Keep a per-clause source file next to the pages: **FACT** (client), **OBSERVED** (measured on the site, dated), **READ** (statute and link), **CHOICE** (default to validate), **TO SUPPLY**. It is what lets a lawyer review in an hour, and what stops a placeholder reaching production unnoticed.
+
+**Currency and gateway.** WooCommerce handles XOF with 0 decimals; display the symbol the country uses (`FCFA`, not `CFA`) through `woocommerce_currency_symbol`. Paystack's official plugin (`woo-paystack` 5.8.6) supports NGN, USD, ZAR, GHS, KES, **XOF**, EGP and RWF — read in `class-wc-gateway-paystack.php`, not in its marketing page. Two things to know before announcing anything:
+
+- `is_available()` returns false while either key is empty, so the gateway is enabled and **invisible at checkout** until the client pastes their own keys. That is the right default: a tool never writes keys, and the configuration tool should check afterwards that none were stored;
+- the **channels** (card, mobile money, transfer) are not a plugin setting: `payment_channels` is empty by default and the merchant account decides. So a footer that names three mobile-money brands promises what the site cannot guarantee. Name the gateway, or get the client to confirm the brands — on this build they did, and the names went back in with the gateway mentioned quietly beside them.
+
+**A store that cannot take money is not a store.** Until a key exists, checkout shows "no payment method available". Say it in the report, every time, rather than letting an approved-looking demo hide it.
