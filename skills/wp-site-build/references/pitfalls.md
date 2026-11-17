@@ -11,6 +11,8 @@ Failures met on real builds, with the exact symptom, the cause and the fix. The 
 - [Store build](#store-build)
 - [Elementor build](#elementor-build)
 - [Remote access](#remote-access)
+- [Preconfigured site, third-party theme](#preconfigured-site-third-party-theme)
+- [Local infrastructure](#local-infrastructure)
 
 ## Design failures no gate can see
 
@@ -185,3 +187,69 @@ The site sets no cookie, yet Complianz 7.5.7 decided a banner was needed. Its wi
 - **MCP over HTTP** needs an `Mcp-Session-Id` header: `initialize`, read the ID from the response headers, send `notifications/initialized`, reuse the ID. `scripts/novamira.mjs` does this and reopens an expired session.
 - **Streamed answers** arrive as `text/event-stream`: read the `data:` line before parsing JSON.
 - **PHP writes are locked** outside Novamira's sandbox: `functions.php` and patterns travel in the theme archive; `style.css`, `theme.json` and `editor.css` can be edited directly.
+
+## Preconfigured site, third-party theme
+
+Measured on a store handed over with Fana 1.1.33 (Thembay), Elementor 4.4.0 free and 12 plugins already installed, November 2026. The branch itself is `third-party-theme.md`.
+
+### WordPress will not boot at all
+
+Fatal error before any hook: a plugin from the previous host (`Utils::$apiTokenFile`). You cannot deactivate it from wp-admin, and you cannot use `wp-load.php` either. Deactivate **in the database** with a small mysqli script that rewrites `active_plugins`, then remove the folders.
+
+### A CSS fix that is correct and still loses
+
+The rule is right, the file is loaded, nothing moves. A multipurpose theme's own stylesheet is long and specific. Prefix every generated selector with `:root` — one class of specificity, enough at equal weight — and enqueue at priority 10000 with `elementor-frontend` as a dependency.
+
+### Every text is 1.25× too large after conversion
+
+The mockup is in `rem` and the parent sets `html` to 20 px, not 16. Convert `rem` to `px` in the generator (×16). Gate 4 catches it: 48 px had become 60 px.
+
+### The footer is gone on phones, and only there
+
+A theme setting named `mobile_footer` set to `0` reads like "no mobile tab bar". On Fana it adds `body.mbhd-ft-desktop`, which hides the **site footer** below 768 px — legal pages unreachable on a phone. Read the theme's code before trusting a setting's name; the tab bar was `mobile_footer_icon`. Found on a 390 px screenshot, not by a gate.
+
+### A string stays English whatever you put in the .mo
+
+`aria-label="Close"` is written literally in the theme's templates, outside any translation function. No `.mo` reaches it. Translate it in the output buffer, or override that one template.
+
+### A pattern that matches nothing while looking right
+
+`wp_dropdown_categories()` writes its attributes in **single quotes** (`name='product_cat'`). A pattern in double quotes matches zero and the fix silently does nothing. Same family: the parent writes `href` before `class` in one template and after it in another, so a fixed-order pattern fixed one case in two.
+
+### A REST filter that never sees the error it was written for
+
+`rest_request_before_callbacks` runs **before** the permission check (`class-wp-rest-server.php`, 1256 against 1260), so it never receives its `WP_Error`. A 401 kept appearing in every visitor's console while the filter looked correct. `rest_request_after_callbacks` receives it.
+
+### A plugin is active but its activation never ran
+
+Installing from the CLI with `activate_plugin( $file, '', false, true )` activates it **silently**: WordPress skips the activation hooks. Complianz had therefore never granted administrators `manage_privacy`, and its banner table stayed empty. Activate non-silently, or replay `do_action( 'activate_' . $file )` for a plugin already active.
+
+### Lighthouse says 100 and the feature is broken
+
+Turning `<a href="javascript:void(0)">` into `<button>` raised the score. Only a keyboard test in a real browser showed the grid/list switch still worked — the theme bound it by `id`, so the change was safe, but no gate would have said so. And fixes applied by script raise the score while leaving the HTML a crawler reads unchanged: fix on the server whenever the server writes it.
+
+## Local infrastructure
+
+### "Maximum execution time of 120 seconds exceeded" in a plugin file
+
+The file named is innocent — on this build, line 18 of a WooCommerce class, which is `defined( 'ABSPATH' ) || exit;`. PHP merely ran out of time there. Two causes, measured together: WordPress ran its cron **on page load** (7.5 s, and the whole queue after a night without visits), and OPcache was off (12 s per page, 330 SQL queries). The home page took 123 s and returned a 500. `DISABLE_WP_CRON` plus OPcache brought it to 3.9 s — but see the next entry before enabling OPcache.
+
+With `DISABLE_WP_CRON`, schedule a real cron on the server (hPanel, cPanel, crontab) or deferred tasks never run again.
+
+### Enabling OPcache makes every PHP page return nothing
+
+Static files are served, PHP pages come back empty, and `error.log` shows `child process exited with status 3221225725` — 0xC00000FD, stack overflow. Apache's default thread stack on Windows is too small for WordPress plus a multipurpose theme and a dozen plugins once the code is cached. `ThreadStackSize 8388608` in the `mpm_winnt_module` block of `conf/extra/httpd-mpm.conf`. Restore `php.ini` first, check the site answers, then change both together.
+
+A benign leftover: `VirtualProtect() failed [87]` repeats in `error.log` under Windows. No crash, no failed page — but the file grows fast, so purge it from time to time.
+
+### MySQL will not start, and it is not the port
+
+XAMPP reports "MySQL shutdown unexpectedly … blocked port, missing dependencies, improper privileges". Read `mysql/data/mysql_error.log` instead of guessing: on this machine it said `Cannot find checkpoint record at LSN` and `Aria recovery failed`. MariaDB's system tables (`mysql.plugin`, `mysql.db`) are **Aria** tables, so a corrupt Aria log stops the server before it opens anything.
+
+The sequence that worked, after copying `data/mysql/` and the Aria logs somewhere safe:
+
+1. delete `aria_log.########` and `aria_log_control` — MariaDB rebuilds them;
+2. `aria_chk -o` (safe recover) on `data/mysql/*.MAI`. **Not** `aria_chk -r`: the sort-based repair failed on `aria_sort_buffer_size is too small`, ignored a `--sort_buffer_size` passed on the command line, and left two privilege tables worse than it found them;
+3. start `mysqld` **in the foreground** with `--console`. The last line of the log file is not the last thing it says: the real error, `Can't open and lock privilege tables`, only appeared on the console.
+
+Then a second corruption surfaced, in InnoDB and in a different database entirely — one unrelated project's table was enough to abort the whole server. Start with `--innodb_force_recovery=1`, dump every database while you can, and only then decide what to do with the broken one. Both corruptions came from an unclean shutdown; neither was visible until the next start.

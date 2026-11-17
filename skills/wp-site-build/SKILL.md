@@ -30,7 +30,7 @@ Each one comes from a mistake that was actually made.
 5. Zero `core/html` blocks. Compose with groups, headings, paragraphs, images.
 6. Images live in the media library, with an `id` on every `core/image`.
 7. Interactive variants all live in the page; the script toggles a class.
-8. No third-party theme under the design.
+8. No third-party theme under the design — a client can waive it, and `references/third-party-theme.md` is what that costs.
 9. Accept in the editor, not on the front end — a page can render perfectly and be unusable in Gutenberg.
 10. Pixel fidelity is measured, not eyeballed: computed styles and geometry, selector by selector.
 
@@ -64,8 +64,9 @@ The method is the same for every site; what differs is phase 4 onwards.
 | Showcase on Elementor free | Pages are Elementor data written by a tool, mockup classes on widgets, styles in the theme; header and footer in PHP; rules 4–6 and 9 in widget terms; gates in the Elementor editor | `references/elementor.md` |
 | Store | WooCommerce block templates, catalogue import, product filters, cart/checkout blocks, consent, payments, newsletter, order confirmation | `references/store.md` |
 | Web app | Custom post types, roles, REST, dynamic blocks, account flows — the mockup still drives every public screen | `references/web-app.md` |
+| Preconfigured site, theme kept | Nothing is empty at the start: demo content to remove, a parent theme to change without editing it, its own settings, its own defects | `references/third-party-theme.md` |
 
-`references/store.md` is measured on a real build (WooCommerce 11.2.2, block checkout, block theme), and so is `references/elementor.md` (Elementor 4.3.6 free, 26 pages). `references/web-app.md` is not: it says so, and routes to the skills that are.
+`references/store.md` is measured on a real build (WooCommerce 11.2.2, block checkout, block theme), and so is `references/elementor.md` (Elementor 4.3.6 free, 26 pages) and `references/third-party-theme.md` (Fana 1.1.33 + Elementor 4.4.0 free, a store handed over preconfigured). `references/web-app.md` is not: it says so, and routes to the skills that are.
 
 ## Facts belong to the client
 
@@ -100,6 +101,7 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `references/seo.md` | At the end of phase 4, and after deployment for Search Console |
 | `references/elementor.md` | Phase 4 when the pages are built with Elementor free |
 | `references/web-app.md` | Membership, booking, dashboards, anything with logged-in users doing work |
+| `references/third-party-theme.md` | The client keeps their theme, or the site arrives preconfigured |
 | `references/pitfalls.md` | As soon as a symptom surprises you |
 
 Related skills: `wp-theme-block-fse` for theme.json and templates, `wp-design-system` for tokens, `wp-woocommerce` for hooks and HPOS, `wp-seo` for canonical, sitemap and schema ownership, `wp-deploy` for migrations, `wp-plugin-architecture` and `wp-blocks-gutenberg` for application code, `wp-accessibility` and `wp-performance` before acceptance.
