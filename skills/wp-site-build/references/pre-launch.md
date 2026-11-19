@@ -80,7 +80,7 @@ Classes measured on the 19/11 run. Each is cheap to fix and expensive to discove
 | Accent colour as text on rare screens | 404 links, checkout terms, "Add address" in the account, the compare "×", a vendor link | Same rule as the rest of the site |
 | Theme greys under 4.5:1 | Category counts `#999`, sort label, inactive tabs `#888`, a white-on-light badge | The palette's text grey |
 | Duplicate names across two category trees | "Immunité, Immunité" on 11 product pages | Rename one side, **keep the slug** |
-| A plugin's own bug | Complianz printed "updated on January 1, 1970": `strtotime(get_the_date('d F Y'))` cannot read a French month | Read the code, filter only that format |
+| A date a plugin never wrote | Complianz printed "updated on January 1, 1970": `cmplz_publish_date` is written by its wizard, and the configuration tool had replaced the wizard | Call the plugin's own `update_cookie_policy_date()` once — and measure the page after the fix: a first, plausible cause read in the code changed nothing |
 
 ## Security review of your own changes
 

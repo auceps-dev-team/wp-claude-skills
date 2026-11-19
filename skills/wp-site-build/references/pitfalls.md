@@ -259,7 +259,9 @@ A theme widget built on a Bootstrap grid (`.row` with −15 px margins) inside a
 
 ### A date of 1 January 1970 on a legal page
 
-Complianz re-reads the page date with `strtotime( get_the_date( 'd F Y' ) )` (`documents/class-document.php`); in French `get_the_date` returns "18 novembre 2026", which `strtotime` cannot parse. Filter `get_the_date` for that exact format only — after checking that nothing else in `plugins/` and `themes/` uses it — and return the English date; Complianz translates it afterwards. The same page showed the site's American date format, which every other date on the site used too.
+The cookie policy said "last updated on January 1, 1970". Complianz dates its documents two ways (`documents/class-document.php`, line 827): with a page ID, `strtotime( get_the_date( 'd F Y' ) )`; without one, the option `cmplz_publish_date`. The option was **missing**: Complianz writes it in `update_cookie_policy_date()`, which its own wizard calls — and a configuration tool that writes the wizard's options directly never runs it. Call that method once from the tool (not on every replay: the date would move without the policy changing).
+
+The first branch has its own bug — in French `get_the_date` returns "18 novembre 2026", which `strtotime` cannot parse — and a filter for it was written first, on that reading of the code. The page still said 1970: the measure after the fix is what showed the cause was the other branch. The same page also exposed the site's American `date_format` (`F j, Y`), used by every other date on the site.
 
 ### Author pages redirected, and every vendor store with them
 
