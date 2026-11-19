@@ -12,6 +12,7 @@ Failures met on real builds, with the exact symptom, the cause and the fix. The 
 - [Elementor build](#elementor-build)
 - [Remote access](#remote-access)
 - [Preconfigured site, third-party theme](#preconfigured-site-third-party-theme)
+- [Pre-launch pass](#pre-launch-pass)
 - [Local infrastructure](#local-infrastructure)
 
 ## Design failures no gate can see
@@ -227,6 +228,44 @@ Installing from the CLI with `activate_plugin( $file, '', false, true )` activat
 ### Lighthouse says 100 and the feature is broken
 
 Turning `<a href="javascript:void(0)">` into `<button>` raised the score. Only a keyboard test in a real browser showed the grid/list switch still worked — the theme bound it by `id`, so the change was safe, but no gate would have said so. And fixes applied by script raise the score while leaving the HTML a crawler reads unchanged: fix on the server whenever the server writes it.
+
+## Pre-launch pass
+
+Measured on the Farmart + Dokan store of `third-party-theme.md`, 18–19/11/2026. The pass itself is `pre-launch.md`.
+
+### Every link in a list is underlined
+
+A rule meant for links in running text — `.entry-content li a` — also matched every product card of the home page (title, brand, wishlist, compare, quick view: 34 cards), "View all" and the category list, because WooCommerce lists are lists. Scope text-link rules to lists without a class (`.entry-content :is(ul, ol):not([class]) > li a`) or to the content wrappers you own — and then exclude the WooCommerce account menu, whose `<ul>` has no class either.
+
+### A plugin's button is dark on dark
+
+The wishlist button showed black text on `#32373C`. WordPress gives every `.wp-element-button` the background of its default buttons; the plugin adds that class, the theme styles the text but not the background. `background-color: transparent` on that plugin's class, then the colours of the reference. The same padding made one icon of three 70 × 59 px in a column of hover buttons, and misaligned the other two.
+
+### An underline Lighthouse does not see
+
+`box-shadow: inset 0 -2px 0 <accent>` draws a perfect underline, and Lighthouse still fails `link-in-text-block` (1.31:1 and 2.81:1 against the surrounding text): only `text-decoration` counts as a non-colour cue. Use `text-decoration: underline` with `text-decoration-color` and `text-underline-offset`.
+
+### A computed style that will not change
+
+`getComputedStyle()` kept returning 30 px after a rule set 36 px, even with `!important` and an inline style. The theme animates the property (`transition: .5s`) and the tab was in the **background**, where animations do not advance: the value stays at the start of the transition. Measure in the foreground tab, or set `transition: none` in the test.
+
+### The site says it is under maintenance and nobody turned it on
+
+`.maintenance` at the root, timestamp a few minutes old: a WordPress **automatic** update, started by cron in an Apache request. Since 6.6 `WP_Automatic_Updater` enables maintenance before upgrading. On XAMPP/Windows it died on "Maximum execution time of 300 seconds exceeded" in `update-core.php`, during the md5 check of the current files — PHP counts wall-clock time on Windows — before copying anything. Read the error log before touching anything; if nothing was copied, remove `.maintenance` (WordPress ignores it after ten minutes anyway), back up, finish with `scripts/wp-core-update.php` and prove it with `scripts/wp-core-verify.php`. The same update took 93 s from the CLI.
+
+### Text cut on the left, on phones only
+
+A theme widget built on a Bootstrap grid (`.row` with −15 px margins) inside an Elementor container with no padding ran from −20 to 410 px on a 390 px screen. The page's own width did not grow past the viewport, so the overflow measure said 0; only the 390 px screenshot showed it. Zero the row's margins and the columns' padding below 992 px.
+
+### A date of 1 January 1970 on a legal page
+
+The cookie policy said "last updated on January 1, 1970". Complianz dates its documents two ways (`documents/class-document.php`, line 827): with a page ID, `strtotime( get_the_date( 'd F Y' ) )`; without one, the option `cmplz_publish_date`. The option was **missing**: Complianz writes it in `update_cookie_policy_date()`, which its own wizard calls — and a configuration tool that writes the wizard's options directly never runs it. Call that method once from the tool (not on every replay: the date would move without the policy changing).
+
+The first branch has its own bug — in French `get_the_date` returns "18 novembre 2026", which `strtotime` cannot parse — and a filter for it was written first, on that reading of the code. The page still said 1970: the measure after the fix is what showed the cause was the other branch. The same page also exposed the site's American `date_format` (`F j, Y`), used by every other date on the site.
+
+### Author pages redirected, and every vendor store with them
+
+Redirecting author archives closes account enumeration — and Dokan builds each store page as an author query (`author_name`), so `is_author()` is true there. Exclude `dokan_is_store_page()` before redirecting. Found by reading `Rewrites.php` before shipping the rule.
 
 ## Local infrastructure
 

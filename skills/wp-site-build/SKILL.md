@@ -44,13 +44,15 @@ Do not start a phase until the previous gate is passed.
 | 1 · Brief | Client | Reference survey, palette and type taken *from* the reference, "what I add" list |
 | 2 · Mockup | Iterative | Home page in HTML, register gate passed, **client approval** |
 | 3 · Page set | Agent | Every page assembled from one header/footer source |
-| 4 · Block theme (or Elementor pages) + staging | Agent | Theme built; local WordPress set up by replayable tools, SEO last; gates 1–5 pass on staging |
+| 4 · Block theme (or Elementor pages) + staging | Agent | Theme built; local WordPress set up by replayable tools, SEO last; gates 1–5 pass on staging; **pre-launch pass** over every URL and security review clean |
 | 5 · Deployment | Agent, **after client approval of the plan** | Backup outside the web root, then the same tools run on production |
 | 6 · Acceptance | Agent | Gates 1–5 pass on production, or back to phase 4 |
 
 Phases 0–3 and the deployment plan: `references/phases.md`. HTML-to-blocks conversion: `references/block-conversion.md`. The five gates with their code: `references/acceptance.md`.
 
 **Staging is local, and every change is a tool.** Content and configuration are written by idempotent PHP scripts (`tools/install-site.php`, `tools/configure-*.php`) run with the PHP CLI against a local copy, never typed into wp-admin. The same scripts replay on production at deployment, and replaying one twice changes nothing — that is checked, not assumed.
+
+**The gates measure the pages you chose; the pre-launch pass reads all of them.** Before the deployment plan, every URL from the database is read in the HTML the server sends, one page per template is rendered at 1366 and 390 px and read on contact sheets, and the agent reviews the security of its own changes: `references/pre-launch.md`. On the build it was written on, all gates were green and the pass still found about thirty defects, none on a gated page.
 
 **SEO is the last tool of phase 4**, once pages and catalogue are final: titles and descriptions for every page, product and category, sitemap, sharing image, `noindex` on cart and account pages. It runs as a dry run first, and a person reads every generated line before it is written: `references/seo.md`.
 
@@ -87,6 +89,11 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `scripts/gate4.mjs` | Gate 4 — same selectors on mockup and site, geometry and computed styles; `--ignore` prints an explained divergence as accepted |
 | `scripts/elementor-data.mjs` | Elementor branch — builders for page data, and `check`: gate 1 offline on the JSON |
 | `scripts/gate5-elementor.mjs` | Elementor branch — gates 2 and 5 in the real editor, with a session WordPress generates locally |
+| `scripts/audit-site.php` | Pre-launch — every URL from the database (filled cart, wishlist, compare, 404, vendor stores…): status, titles, h1, English left, placeholders, broken internal links |
+| `scripts/audit-render.mjs` | Pre-launch — one URL per template at 1366 and 390 px: overflow, broken images, JS errors, accent-coloured text, contrast, full-page screenshots |
+| `scripts/contact-sheet.php` | Pre-launch — the screenshots side by side, to read every template (GD) |
+| `scripts/capture-elements.mjs` | Any phase — one element at full resolution, optionally hovered, as visitor or administrator |
+| `scripts/wp-core-update.php` · `wp-core-verify.php` | Local stack — finish a core update the web request keeps killing; check every core file against the official checksums |
 | `assets/theme-skeleton/` | Phase 4 — minimal block theme: `theme.json` with `blockGap: 0px`, `editor.css`, fonts in the editor |
 
 ## References
@@ -102,6 +109,7 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `references/elementor.md` | Phase 4 when the pages are built with Elementor free |
 | `references/web-app.md` | Membership, booking, dashboards, anything with logged-in users doing work |
 | `references/third-party-theme.md` | The client keeps their theme, or the site arrives preconfigured |
+| `references/pre-launch.md` | Before the deployment plan, and again on production: every URL, every template, your own security |
 | `references/pitfalls.md` | As soon as a symptom surprises you |
 
 Related skills: `wp-theme-block-fse` for theme.json and templates, `wp-design-system` for tokens, `wp-woocommerce` for hooks and HPOS, `wp-seo` for canonical, sitemap and schema ownership, `wp-deploy` for migrations, `wp-plugin-architecture` and `wp-blocks-gutenberg` for application code, `wp-accessibility` and `wp-performance` before acceptance.

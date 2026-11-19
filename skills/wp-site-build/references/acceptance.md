@@ -175,3 +175,6 @@ Test artefacts that have produced imaginary failures:
 - **Reserved query vars.** `?m=`, `?p=`, `?s=`, `?cat=`, `?tag=` trigger archive queries. Cache-buster: `?fresh=<n>`.
 - **A consent banner over the content.** Hide it for the screenshot (`.cmplz-cookiebanner{display:none}` from the console), never by accepting cookies — that changes what the next measurement sees.
 - **Your own test data.** Submissions, subscribers and orders created by a test are deleted afterwards, and the report says so.
+- **A tab in the background.** Animations do not advance there: a computed style read from a background tab stays at the start of a CSS transition, and a rule that works looks like a rule that loses (`pitfalls.md`, "A computed style that will not change").
+- **A store in "coming soon" mode.** Visitors — and Lighthouse without a session — get the placeholder page. Pass a local administrator's session (`--extra-headers` for Lighthouse) and say in the report that the admin bar's own findings come from it (`pre-launch.md`).
+- **The browser pane's scale.** An app's browser pane shows a 1366 px page at about 500 px: judge borders, underlines and gaps on `scripts/capture-elements.mjs` captures, not there.
