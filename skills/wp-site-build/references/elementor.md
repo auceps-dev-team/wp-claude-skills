@@ -153,7 +153,8 @@ A measured limit: a CF7 radio choice holds text only. Choice cards with an icon 
 **Editor gates without a password.** `gate5-elementor.mjs` needs a logged-in administrator. The agent never types or stores a password. WordPress itself generates a short session for the local administrator, through a CLI tool that refuses any host other than localhost:
 
 ```php
-<?php // tools/test-session.php — local only; prints the auth cookies as JSON
+<?php // tools/test-session.php — local only, CLI only; prints the auth cookies as JSON
+if (PHP_SAPI !== 'cli') { http_response_code(403); exit; } // served by Apache, this would hand a session to anyone
 require __DIR__ . '/_bootstrap.php';                       // wp-load, current user = first administrator
 $host = wp_parse_url(home_url(), PHP_URL_HOST);
 if (!in_array($host, ['localhost', '127.0.0.1'], true)) { fwrite(STDERR, "local sites only\n"); exit(1); }
@@ -166,6 +167,8 @@ echo wp_json_encode([$c(AUTH_COOKIE, 'auth', ADMIN_COOKIE_PATH), $c(AUTH_COOKIE,
 ```
 
 Write the output to a scratch file, run the gate, and delete the file. The token expires on its own an hour later.
+
+The CLI guard is not optional. The tools folder usually sits inside the web root, and XAMPP's Apache listens on every interface: without the guard and a `Require all denied` in the folder, this file is an administrator login for anyone on the local network (security review of 19/11/2026, `pre-launch.md`). Destroy the sessions your tools opened at the end of the work — eleven were still alive that day.
 
 **Pace the editor runs.** On XAMPP without OPcache, one page took 1–2 minutes to become ready in the editor, so run gate 5 on one page per template, not on the whole site. Run the browser gates one at a time, never in parallel: a slowed run times out and reads like a regression.
 
