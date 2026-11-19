@@ -275,6 +275,8 @@ The file named is innocent — on this build, line 18 of a WooCommerce class, wh
 
 With `DISABLE_WP_CRON`, schedule a real cron on the server (hPanel, cPanel, crontab) or deferred tasks never run again.
 
+A third cause, with OPcache already on: the first request after Apache restarts, on a machine short of memory. On 19/11 four WordPress sites on the same stack each returned that 500 at about 120 s, once; their home pages later answered 200, in 10 s to 102 s, and phpMyAdmin went from 27.9 s to 0.8 s. A CLI profile of the home page showed no outbound HTTP call, only pauses of 1 to 5 s spread everywhere; 50 queries timed apart took 11 ms. The first read of `wp-includes/*.php` took 8.75 s, the second 0.10 s; 1.9 GB of 16 GB were free and one system service held two cores. Request the page again, and measure the machine, before reading the code.
+
 ### Enabling OPcache makes every PHP page return nothing
 
 Static files are served, PHP pages come back empty, and `error.log` shows `child process exited with status 3221225725` — 0xC00000FD, stack overflow. Apache's default thread stack on Windows is too small for WordPress plus a multipurpose theme and a dozen plugins once the code is cached. `ThreadStackSize 8388608` in the `mpm_winnt_module` block of `conf/extra/httpd-mpm.conf`. Restore `php.ini` first, check the site answers, then change both together.
@@ -283,12 +285,22 @@ A benign leftover: `VirtualProtect() failed [87]` repeats in `error.log` under W
 
 ### MySQL will not start, and it is not the port
 
-XAMPP reports "MySQL shutdown unexpectedly … blocked port, missing dependencies, improper privileges". Read `mysql/data/mysql_error.log` instead of guessing: on this machine it said `Cannot find checkpoint record at LSN` and `Aria recovery failed`. MariaDB's system tables (`mysql.plugin`, `mysql.db`) are **Aria** tables, so a corrupt Aria log stops the server before it opens anything.
+XAMPP reports "MySQL shutdown unexpectedly … blocked port, missing dependencies, improper privileges". Read `mysql/data/mysql_error.log` instead of guessing: on this machine it said `Cannot find checkpoint record at LSN` and `Aria recovery failed` — on 17 and again on 19 November 2026. MariaDB's system tables (`mysql.plugin`, `mysql.db`, `mysql.global_priv`) are **Aria** tables, so a corrupt Aria log stops the server before it opens anything.
 
-The sequence that worked, after copying `data/mysql/` and the Aria logs somewhere safe:
+Measure before repairing; both checks are read-only:
 
-1. delete `aria_log.########` and `aria_log_control` — MariaDB rebuilds them;
-2. `aria_chk -o` (safe recover) on `data/mysql/*.MAI`. **Not** `aria_chk -r`: the sort-based repair failed on `aria_sort_buffer_size is too small`, ignored a `--sort_buffer_size` passed on the command line, and left two privilege tables worse than it found them;
-3. start `mysqld` **in the foreground** with `--console`. The last line of the log file is not the last thing it says: the real error, `Can't open and lock privilege tables`, only appeared on the console.
+- `aria_chk --check --ignore-control-file --silent mysql\*.MAI` names the broken tables. On 19/11: 22 of 24 sound, `global_priv` corrupt, and `proxies_priv` longer than its pages — and holding the very startup lines missing from `mysql_error.log`, from `Reading of all Master_info` to `Version:`.
+- Read the bytes of a broken `.MAD` before trusting a repair. `global_priv.MAD` held two table paths and no account: its four rows were gone. `aria_chk -r` on the table, then `-o -e` and `-r -e` on copies from the backup, all printed `Data records: 4` followed by `Data records: 0`. No repair brings back what the file no longer holds — try them on copies.
 
-Then a second corruption surfaced, in InnoDB and in a different database entirely — one unrelated project's table was enough to abort the whole server. Start with `--innodb_force_recovery=1`, dump every database while you can, and only then decide what to do with the broken one. Both corruptions came from an unclean shutdown; neither was visible until the next start.
+The sequence that worked, with `mysqld` stopped:
+
+1. copy the whole `data/` folder somewhere safe, not just `data/mysql/` (314 MB, 6 s with `robocopy /E`);
+2. move `aria_log.########` and `aria_log_control` out — MariaDB rebuilds them;
+3. `aria_chk -o` (safe recover) on `data/mysql/*.MAI`. **Not** `aria_chk -r`: on 17/11 the sort-based repair failed on `aria_sort_buffer_size is too small`, ignored a `--sort_buffer_size` passed on the command line, and left two privilege tables worse than it found them;
+4. if a privilege table came back empty, rebuild its accounts from what connects to the server, not from memory: every `wp-config.php`, every `.env`, phpMyAdmin's `config.inc.php`. Here all of them used `root` without a password, plus `pma` for phpMyAdmin, so XAMPP's pristine `mysql/backup/mysql/global_priv.*` was the right table — same `.frm` checksum, the same four accounts (`root` on `localhost`, `127.0.0.1` and `::1`; `pma@localhost`). A fifth name among its bytes was not an account;
+5. start `mysqld` **in the foreground** with `--console`. The last line of the log file is not the last thing it says: on 17/11 the real error, `Can't open and lock privilege tables`, only appeared on the console;
+6. `mysqlcheck -u root --all-databases --check`. With the Aria logs gone, tables can refuse to open with `Table is from another system and must be zerofilled or repaired` — 16 of them on 19/11, after an `-o` run that had been given `--ignore-control-file` (the 17/11 pass recorded nothing of the kind). Stop the server with `mysqladmin -u root shutdown`, then run `aria_chk --zerofill` **once per table**: given several files, the `aria_chk` 1.2 of MariaDB 10.4.32 zerofills the first and only checks the rest — measured on copies. `aria_chk -dvv <table>.MAI` must then show `zerofilled` under `Status`. After that, 433 of 433 tables were OK.
+
+A second corruption can surface in InnoDB, in a different database entirely: on 17/11 one unrelated project's table was enough to abort the whole server. Start with `--innodb_force_recovery=1`, dump every database while you can, and only then decide what to do with the broken one. On 19/11 the same `mysqlcheck` found all 409 InnoDB tables sound, in 3.5 s. Neither corruption was visible until the next start.
+
+**Why it keeps happening.** Count the clean stops before blaming the disk: `mysql_error.log` held 65 starts and not one `Shutdown complete` — this server had never been stopped, only killed — and Windows had not rebooted for eleven days, so it was not a power cut. What kills it was not established. XAMPP's own `mysql_stop.bat` calls `killprocess.bat` behind a `@@BITROCK_INSTALLDIR@@` placeholder the installer never replaced; whether the control panel's Stop button kills too is unverified — click it once and look for `Shutdown complete` at the end of the log. `mysqladmin -u root shutdown` logged it all three times it was used. And a `mysqld` started from an agent's background task belongs to that task, not to XAMPP: stop it cleanly before the session ends and let XAMPP start its own.

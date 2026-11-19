@@ -52,7 +52,7 @@ Phases 0–3 and the deployment plan: `references/phases.md`. HTML-to-blocks con
 
 **Staging is local, and every change is a tool.** Content and configuration are written by idempotent PHP scripts (`tools/install-site.php`, `tools/configure-*.php`) run with the PHP CLI against a local copy, never typed into wp-admin. The same scripts replay on production at deployment, and replaying one twice changes nothing — that is checked, not assumed.
 
-**The gates measure the pages you chose; the pre-launch pass reads all of them.** Before the deployment plan, every URL from the database is read in the HTML the server sends, one page per template is rendered at 1366 and 390 px and read on contact sheets, and the agent reviews the security of its own changes: `references/pre-launch.md`. On the build it was written on, all gates were green and the pass still found about thirty defects, none on a gated page.
+**The gates measure the pages you chose; the pre-launch pass reads all of them** — every URL in the HTML the server sends, every template at 1366 and 390 px, and the security of your own changes: `references/pre-launch.md`.
 
 **SEO is the last tool of phase 4**, once pages and catalogue are final: titles and descriptions for every page, product and category, sitemap, sharing image, `noindex` on cart and account pages. It runs as a dry run first, and a person reads every generated line before it is written: `references/seo.md`.
 
@@ -89,11 +89,9 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `scripts/gate4.mjs` | Gate 4 — same selectors on mockup and site, geometry and computed styles; `--ignore` prints an explained divergence as accepted |
 | `scripts/elementor-data.mjs` | Elementor branch — builders for page data, and `check`: gate 1 offline on the JSON |
 | `scripts/gate5-elementor.mjs` | Elementor branch — gates 2 and 5 in the real editor, with a session WordPress generates locally |
-| `scripts/audit-site.php` | Pre-launch — every URL from the database (filled cart, wishlist, compare, 404, vendor stores…): status, titles, h1, English left, placeholders, broken internal links |
-| `scripts/audit-render.mjs` | Pre-launch — one URL per template at 1366 and 390 px: overflow, broken images, JS errors, accent-coloured text, contrast, full-page screenshots |
-| `scripts/contact-sheet.php` | Pre-launch — the screenshots side by side, to read every template (GD) |
-| `scripts/capture-elements.mjs` | Any phase — one element at full resolution, optionally hovered, as visitor or administrator |
-| `scripts/wp-core-update.php` · `wp-core-verify.php` | Local stack — finish a core update the web request keeps killing; check every core file against the official checksums |
+| `scripts/audit-site.php` · `audit-render.mjs` · `contact-sheet.php` | Pre-launch — every URL, every template at two widths, contact sheets: `references/pre-launch.md` |
+| `scripts/capture-elements.mjs` | Any phase — one element at full resolution, optionally hovered |
+| `scripts/wp-core-update.php` · `wp-core-verify.php` | Local stack — core update from the CLI; core checksums |
 | `assets/theme-skeleton/` | Phase 4 — minimal block theme: `theme.json` with `blockGap: 0px`, `editor.css`, fonts in the editor |
 
 ## References
@@ -109,7 +107,7 @@ In comments, commit messages and reports, say which claims were **measured** (wi
 | `references/elementor.md` | Phase 4 when the pages are built with Elementor free |
 | `references/web-app.md` | Membership, booking, dashboards, anything with logged-in users doing work |
 | `references/third-party-theme.md` | The client keeps their theme, or the site arrives preconfigured |
-| `references/pre-launch.md` | Before the deployment plan, and again on production: every URL, every template, your own security |
+| `references/pre-launch.md` | Before the deployment plan, and again on production |
 | `references/pitfalls.md` | As soon as a symptom surprises you |
 
 Related skills: `wp-theme-block-fse` for theme.json and templates, `wp-design-system` for tokens, `wp-woocommerce` for hooks and HPOS, `wp-seo` for canonical, sitemap and schema ownership, `wp-deploy` for migrations, `wp-plugin-architecture` and `wp-blocks-gutenberg` for application code, `wp-accessibility` and `wp-performance` before acceptance.
